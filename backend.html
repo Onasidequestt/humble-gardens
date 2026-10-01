@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Humble Gardens Back Office</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f6f2ea;--ink:#1d211c;--muted:#5a6157;--leaf:#2f5a3a;--leaf-soft:#e3eadf;--line:#d9d2c3;--card:#fffdf8;--sun:#b7791f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px 60px}
+.draft{background:var(--ink);color:var(--paper);text-align:center;font-size:13px;padding:6px 16px}
+h1,h2,h3{font-family:Fraunces,serif;line-height:1.2}
+h1{font-size:36px;margin:28px 0 6px}
+h2{font-size:26px;margin:44px 0 6px}
+.lead{color:var(--muted);font-size:18px;margin:0 0 18px;max-width:760px}
+.map{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;overflow-x:auto}
+.map svg{display:block;width:100%;height:auto}
+.flow{display:none;list-style:none;padding:0;margin:0}
+.flow li{background:#fff;border:1.5px solid var(--leaf);border-radius:10px;padding:10px 12px;margin:0 0 6px;font-size:15px}
+.flow li.crew{background:var(--leaf-soft)}
+.flow li.end{background:var(--leaf);color:#fff}
+.flow .arr{border:0;background:none;text-align:center;color:var(--muted);padding:0;margin:0 0 6px}
+.cal{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;font-size:12px}
+.cal div{background:var(--leaf-soft);border-radius:6px;padding:6px;min-height:52px}
+.cal b{display:block;color:var(--ink)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.shots{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}
+.screen{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.bar{background:var(--leaf);color:#fff;padding:8px 14px;font-size:14px;font-weight:600;display:flex;justify-content:space-between}
+.body{padding:14px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.tile{background:var(--leaf-soft);border-radius:8px;padding:8px;font-size:12px;color:var(--muted)}
+.tile b{display:block;font-size:13px;color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:500}
+.pill{font-size:11px;padding:2px 7px;border-radius:10px;background:var(--leaf-soft);color:var(--leaf);font-weight:600}
+.pill.cash{background:#f5e9d3;color:var(--sun)}
+.pill.due{background:#f1e1dc;color:#8a3b2a}
+.phone{max-width:300px;margin:0 auto;border:8px solid var(--ink);border-radius:26px}
+.big{display:block;width:100%;padding:14px;border:0;border-radius:8px;background:var(--leaf);color:#fff;font:600 16px Inter;margin:8px 0}
+.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.fake{color:var(--muted);font-size:13px;font-style:italic;margin:8px 0 0}
+ol.q{padding-left:22px;max-width:760px}
+ol.q li{margin-bottom:10px}
+.shots>*,.cal>div,.tiles>div{min-width:0}
+table{table-layout:fixed;word-break:break-word}
+@media (max-width:640px){.cal{grid-template-columns:repeat(3,1fr)}.phone{max-width:100%}.map svg,.legend{display:none}.flow{display:block}}
+@media (max-width:800px){.shots{grid-template-columns:1fr}.tiles{grid-template-columns:repeat(2,1fr)}h1{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="draft">DRAFT outline for Clark. Nothing is built yet. Names and numbers in the sketches are examples only.</div>
+<div class="wrap">
+
+<h1>Humble Gardens back office</h1>
+<p class="lead">A login behind the website (planned). The "Staff login" link in the website footer opens your owner view, or a crew member's view. Your crew clocks their hours against each client, and those hours flow into the monthly invoice and your dashboard. You record cash, check or bank payments and enter expenses by hand. No bank account is connected.</p>
+
+<h2>How it fits together</h2>
+<p class="lead">Arrows show where information goes. Your crew only sees the green boxes on the left. Everything else is yours.</p>
+<div class="map">
+<svg viewBox="0 0 1000 470" role="img" aria-label="Diagram: crew timecards and the schedule feed clients and jobs, which feed monthly invoices, then payments, then the dashboard; expenses also feed the dashboard.">
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#5a6157"/></marker></defs>
+  <g font-family="Inter,sans-serif" font-size="14" fill="#1d211c">
+  <!-- lanes -->
+  <rect x="10" y="10" width="220" height="450" rx="12" fill="#e3eadf"/>
+  <text x="120" y="36" text-anchor="middle" font-weight="600" fill="#2f5a3a">CREW LOGIN (phone)</text>
+  <rect x="250" y="10" width="740" height="450" rx="12" fill="none" stroke="#d9d2c3" stroke-dasharray="5 5"/>
+  <text x="620" y="36" text-anchor="middle" font-weight="600" fill="#5a6157">YOUR LOGIN (owner)</text>
+
+  <!-- nodes -->
+  <g stroke="#2f5a3a" stroke-width="1.5">
+    <rect x="30" y="80" width="180" height="74" rx="10" fill="#fff"/>
+    <rect x="30" y="290" width="180" height="74" rx="10" fill="#fff"/>
+    <rect x="290" y="185" width="190" height="74" rx="10" fill="#fff"/>
+    <rect x="540" y="80" width="200" height="74" rx="10" fill="#fff"/>
+    <rect x="540" y="290" width="190" height="74" rx="10" fill="#fff"/>
+    <rect x="790" y="185" width="185" height="74" rx="10" fill="#2f5a3a"/>
+    <rect x="290" y="370" width="190" height="64" rx="10" fill="#fff" stroke-dasharray="4 3"/>
+  </g>
+  <text x="120" y="110" text-anchor="middle" font-weight="600">Timecards</text>
+  <text x="120" y="132" text-anchor="middle" font-size="12" fill="#5a6157">clock in/out at each job</text>
+  <text x="120" y="320" text-anchor="middle" font-weight="600">Crew calendar</text>
+  <text x="120" y="342" text-anchor="middle" font-size="12" fill="#5a6157">who goes where, which day</text>
+  <text x="385" y="215" text-anchor="middle" font-weight="600">Clients &amp; jobs</text>
+  <text x="385" y="237" text-anchor="middle" font-size="12" fill="#5a6157">property, monthly price, notes</text>
+  <text x="635" y="110" text-anchor="middle" font-weight="600">Monthly invoices</text>
+  <text x="635" y="132" text-anchor="middle" font-size="12" fill="#5a6157">drafted monthly, you send</text>
+  <text x="635" y="320" text-anchor="middle" font-weight="600">Payments</text>
+  <text x="635" y="342" text-anchor="middle" font-size="12" fill="#5a6157">cash · check · bank, by hand</text>
+  <text x="882" y="215" text-anchor="middle" font-weight="600" fill="#fff">Dashboard</text>
+  <text x="882" y="237" text-anchor="middle" font-size="12" fill="#e3eadf">clients, hours, money in/out</text>
+  <text x="385" y="398" text-anchor="middle" font-weight="600">Expenses</text>
+  <text x="385" y="418" text-anchor="middle" font-size="12" fill="#5a6157">typed in by you</text>
+
+  <!-- edges -->
+  <g stroke="#5a6157" stroke-width="1.6" fill="none" marker-end="url(#a)">
+    <path d="M210,117 C260,117 250,205 288,210"/>
+    <path d="M288,235 C250,240 260,327 212,327"/>
+    <path d="M480,205 C510,190 500,125 538,120"/>
+    <path d="M210,105 C360,60 440,90 538,105"/>
+    <path d="M635,154 L635,288"/>
+    <path d="M730,327 C770,320 770,250 788,240"/>
+    <path d="M730,117 C770,125 770,195 788,205"/>
+    <path d="M480,402 C650,440 850,380 882,261"/>
+  </g>
+  <g font-size="11" fill="#5a6157">
+    <text x="228" y="170">hours by client</text>
+    <text x="360" y="72">hours for the month</text>
+    <text x="645" y="225">client pays</text>
+  </g>
+  </g>
+</svg>
+<ol class="flow">
+  <li class="crew"><b>Crew: timecards</b> clock in and out at each job</li><li class="arr">↓ hours by client</li>
+  <li><b>Clients &amp; jobs</b> property, price, notes</li><li class="arr">↓</li>
+  <li><b>Monthly invoices</b> prepared each month, you send</li><li class="arr">↓ client pays</li>
+  <li><b>Payments</b> cash · check · bank, marked by you</li><li class="arr">↓ plus expenses you type in</li>
+  <li class="end"><b>Dashboard</b> clients, hours, money in and out</li>
+  <li class="arr">The crew calendar comes from Clients &amp; jobs.</li>
+</ol>
+<div class="legend"><span><i style="background:#e3eadf"></i>Crew sees this</span><span><i style="border:1.5px dashed #5a6157"></i>You type it in</span><span><i style="background:#2f5a3a"></i>Where it all adds up</span></div>
+</div>
+
+<h2>What the screens could look like</h2>
+<p class="lead">Rough sketches to agree the idea. Final look matches the website.</p>
+<div class="shots">
+  <div class="screen">
+    <div class="bar"><span>Dashboard · this month</span><span>Owner</span></div>
+    <div class="body">
+      <div class="tiles">
+        <div class="tile"><b>Invoiced</b>total for the month</div>
+        <div class="tile"><b>Collected</b>cash / check / bank</div>
+        <div class="tile"><b>Still owed</b>unpaid invoices</div>
+        <div class="tile"><b>Crew hours</b>all clients</div>
+      </div>
+      <table>
+        <tr><th>Client</th><th>Hours worked</th><th>Hours billed</th><th>Invoice</th><th>Paid by</th></tr>
+        <tr><td>SAMPLE client A</td><td>6.5</td><td>flat price</td><td>sent</td><td><span class="pill cash">cash</span></td></tr>
+        <tr><td>SAMPLE client B</td><td>4.0</td><td>4.0</td><td>sent</td><td><span class="pill">check</span></td></tr>
+        <tr><td>SAMPLE client C</td><td>9.0</td><td>9.0</td><td>draft</td><td><span class="pill due">not yet</span></td></tr>
+      </table>
+      <p class="fake">Planned: click any client to see every visit, who worked, and each invoice.</p>
+    </div>
+  </div>
+  <div class="phone screen">
+    <div class="bar"><span>Timecard</span><span>Crew</span></div>
+    <div class="body">
+      <div class="row"><b>Today</b><span>2 jobs</span></div>
+      <div class="row"><span>SAMPLE client A</span><span>8:00–11:15</span></div>
+      <div class="row"><span>SAMPLE client C</span><span>now on site</span></div>
+      <button class="big" type="button">Clock out of this job</button>
+      <p class="fake">Big buttons for use on a phone. Crew would see only their own hours and schedule.</p>
+    </div>
+  </div>
+</div>
+
+<div class="shots" style="margin-top:18px">
+  <div class="screen">
+    <div class="bar"><span>Invoice · SAMPLE client B</span><span>Owner</span></div>
+    <div class="body">
+      <table>
+        <tr><th>Item</th><th>Qty</th><th>Amount</th></tr>
+        <tr><td>Monthly service</td><td>1</td><td>$ —</td></tr>
+        <tr><td>Labor from timecards</td><td>4.0 h</td><td>$ —</td></tr>
+        <tr><td><b>Total</b></td><td></td><td><b>$ —</b></td></tr>
+      </table>
+      <button class="big" type="button">Send invoice</button>
+      <div class="row"><span>Mark paid:</span><span><span class="pill cash">cash</span> <span class="pill">check</span> <span class="pill">bank</span></span></div>
+    </div>
+  </div>
+  <div class="screen">
+    <div class="bar"><span>Crew calendar · this week</span><span>Owner</span></div>
+    <div class="body">
+      <div class="cal"><div><b>Mon</b>Client A</div><div><b>Tue</b>Client C</div><div><b>Wed</b>Client B</div><div><b>Thu</b>—</div><div><b>Fri</b>Client A</div></div>
+      <p class="fake">Expenses get a simple form too: date, amount, what it was for.</p>
+    </div>
+  </div>
+</div>
+
+<h2>Monthly invoices, step by step</h2>
+<ol class="q">
+  <li>Each month, the system prepares a new invoice for every repeat client, copied from last month's.</li>
+  <li>Crew hours from the timecards are filled in for that client, either billed or just shown as a record of the work, depending on how you charge that client.</li>
+  <li>You check it, change anything, then send it (by email or on paper, to be agreed).</li>
+  <li>When the client pays, you mark it cash, check or bank. The dashboard is updated.</li>
+</ol>
+
+<h2>A few questions before we build</h2>
+<ol class="q">
+  <li>Do most clients pay a flat monthly price, or are you billing by the hour?</li>
+  <li>How many people on the crew need a login?</li>
+  <li>Should invoices go out by email, on paper, or both?</li>
+  <li>Does anything on the website draft need changing, such as wording, services or the area you cover?</li>
+</ol>
+</div>
+</body>
+</html>

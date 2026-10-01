@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Humble Gardens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f6f2ea;--ink:#1d211c;--muted:#5a6157;--leaf:#2f5a3a;--leaf-soft:#e3eadf;--line:#d9d2c3;--card:#fffdf8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.6 Inter,system-ui,sans-serif}
+a{color:var(--leaf)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+.draft{background:var(--ink);color:var(--paper);text-align:center;font-size:13px;padding:6px 16px}
+header{display:flex;justify-content:space-between;align-items:center;padding:18px 0;gap:12px;flex-wrap:wrap}
+.brand{font-family:Fraunces,serif;font-weight:600;font-size:22px;text-decoration:none;color:var(--ink)}
+nav a{margin-left:20px;text-decoration:none;color:var(--ink);font-weight:500;display:inline-flex;align-items:center;min-height:44px;padding:0 6px}
+nav a.call{background:var(--leaf);color:#fff;padding:10px 16px;border-radius:6px}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:10px 0 40px}
+.hero img{width:100%;max-width:420px;mix-blend-mode:multiply;justify-self:center}
+h1,h2,h3{font-family:Fraunces,serif;font-weight:600;line-height:1.2}
+h1{font-size:44px;margin:0 0 16px}
+h2{font-size:32px;margin:0 0 10px}
+.lead{font-size:19px;color:var(--muted);margin:0 0 26px}
+.btn{display:inline-block;background:var(--leaf);color:#fff;text-decoration:none;padding:14px 22px;border-radius:6px;font-weight:600;margin:0 10px 10px 0}
+.btn.ghost{background:none;color:var(--leaf);border:1.5px solid var(--leaf)}
+section{padding:56px 0;border-top:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:26px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px}
+.card h3{margin:0 0 8px;font-size:21px}
+.card ul{margin:0;padding-left:18px;color:var(--muted)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px}
+.steps b{display:block;font-family:Fraunces,serif;font-size:28px;color:var(--leaf)}
+form{display:grid;gap:14px;max-width:560px;margin-top:20px}
+label{font-weight:500;font-size:15px}
+input,textarea,select{width:100%;font:inherit;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--card);margin-top:4px}
+.note{font-size:14px;color:var(--muted)}
+.contact{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+.phone{font-family:Fraunces,serif;font-size:30px;text-decoration:none;color:var(--ink)}
+footer{padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+@media (max-width:760px){
+  .hero,.contact{grid-template-columns:1fr}
+  .hero img{max-width:280px;order:-1}
+  .grid,.steps{grid-template-columns:1fr}
+  h1{font-size:34px}
+  nav a{margin-left:8px}
+  form .btn{width:100%;min-height:48px}
+}
+</style>
+</head>
+<body>
+<div class="draft">DRAFT for Clark's review. Not live. The form does not send yet.</div>
+<div class="wrap">
+<header>
+  <a class="brand" href="index.html">Humble Gardens</a>
+  <nav><a href="#services">Services</a><a href="#contact">Contact</a><a class="call" href="tel:+18089870674">Call 808-987-0674</a></nav>
+</header>
+
+<div class="hero">
+  <div>
+    <h1>Landscape care for Waimea and the dry side of the Big Island.</h1>
+    <p class="lead">Regular yard maintenance, irrigation work and new plantings across Waimea and the Big Island.</p>
+    <a class="btn" href="#contact">Request a quote</a><a class="btn ghost" href="tel:+18089870674">Call us</a>
+  </div>
+  <img src="logo.jpg" alt="Humble Gardens logo: a circle of native Hawaiian plants and birds">
+</div>
+
+<section id="services">
+  <h2>What we do</h2>
+  <p class="lead">Regular yard care, plus irrigation and planting work.</p>
+  <div class="grid">
+    <div class="card"><h3>Monthly service</h3><ul>
+      <li>Mowing and weed whacking</li><li>Weeding around the property</li><li>Hedging</li><li>Leaf and debris clean-up</li><li>Blowing driveways and pathways</li><li>Green waste dump run</li></ul></div>
+    <div class="card"><h3>Plant health</h3><ul>
+      <li>Fertilization</li><li>Pest spraying</li><li>Irrigation test, check and adjustments</li></ul></div>
+    <div class="card"><h3>Irrigation and planting</h3><ul>
+      <li>Irrigation assessment and repair</li><li>New plantings for current clients</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <h2>How it works</h2>
+  <div class="steps">
+    <div><b>1</b>Call or send the form and tell us about your property.</div>
+    <div><b>2</b>We get back to you to talk through what your property needs.</div>
+    <div><b>3</b>Regular clients get one invoice each month.</div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="contact">
+    <div>
+      <h2>Get in touch</h2>
+      <p class="lead">The quickest way to reach us is by phone.</p>
+      <a class="phone" href="tel:+18089870674">808-987-0674</a>
+      <p class="note">Serving Waimea and the dry side of the Big Island.</p>
+    </div>
+    <form onsubmit="event.preventDefault();this.querySelector('.note').textContent='Draft only: in the finished site this sends your message to Humble Gardens.'">
+      <label>Name<input required autocomplete="name"></label>
+      <label>Phone<input type="tel" required autocomplete="tel"></label>
+      <label>Email (optional)<input type="email" autocomplete="email"></label>
+      <label>Property area<input placeholder="e.g. Waimea town"></label>
+      <label>What do you need?<select><option>Monthly service</option><option>Irrigation assessment and repair</option><option>New plantings</option><option>Something else</option></select></label>
+      <label>Message<textarea rows="4"></textarea></label>
+      <button class="btn" type="submit" style="border:0;cursor:pointer;justify-self:start">Send</button>
+      <p class="note">We will get back to you by phone or email.</p>
+    </form>
+  </div>
+</section>
+
+<footer><span>© Humble Gardens · Waimea, Big Island, Hawaiʻi</span><a href="backend.html">Staff login</a></footer>
+</div>
+</body>
+</html>
