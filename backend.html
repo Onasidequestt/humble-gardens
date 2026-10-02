@@ -54,7 +54,7 @@ table{table-layout:fixed;word-break:break-word}
 </style>
 </head>
 <body>
-<div class="draft">DRAFT outline for Clark. Nothing is built yet. Names and numbers in the sketches are examples only.</div>
+<div class="draft">DRAFT outline for Clark. The back office is being built; the screens below are sketches and the names and numbers are examples only.</div>
 <div class="wrap">
 
 <h1>Humble Gardens back office</h1>
@@ -140,7 +140,7 @@ table{table-layout:fixed;word-break:break-word}
       </div>
       <table>
         <tr><th>Client</th><th>Hours worked</th><th>Hours billed</th><th>Invoice</th><th>Paid by</th></tr>
-        <tr><td>SAMPLE client A</td><td>6.5</td><td>flat price</td><td>sent</td><td><span class="pill cash">cash</span></td></tr>
+        <tr><td>SAMPLE client A</td><td>6.5</td><td>flat monthly price</td><td>sent</td><td><span class="pill cash">cash</span></td></tr>
         <tr><td>SAMPLE client B</td><td>4.0</td><td>4.0</td><td>sent</td><td><span class="pill">check</span></td></tr>
         <tr><td>SAMPLE client C</td><td>9.0</td><td>9.0</td><td>draft</td><td><span class="pill due">not yet</span></td></tr>
       </table>
@@ -186,16 +186,16 @@ table{table-layout:fixed;word-break:break-word}
 <ol class="q">
   <li>Each month, the system prepares a new invoice for every repeat client, copied from last month's.</li>
   <li>Crew hours from the timecards are filled in for that client, either billed or just shown as a record of the work, depending on how you charge that client.</li>
-  <li>You check it, change anything, then send it (by email or on paper, to be agreed).</li>
+  <li>You check it, change anything, then email it to the client as a PDF. Invoices go out by email only.</li>
   <li>When the client pays, you mark it cash, check or bank. The dashboard is updated.</li>
 </ol>
 
-<h2>A few questions before we build</h2>
+<h2>Agreed with Clark</h2>
 <ol class="q">
-  <li>Do most clients pay a flat monthly price, or are you billing by the hour?</li>
-  <li>How many people on the crew need a login?</li>
-  <li>Should invoices go out by email, on paper, or both?</li>
-  <li>Does anything on the website draft need changing, such as wording, services or the area you cover?</li>
+  <li>Clients pay either a flat monthly price or by the hour, and some both. Every invoice can carry either or both.</li>
+  <li>Three crew logins to start, plus your owner login.</li>
+  <li>Invoices go out by email only, as a PDF.</li>
+  <li>Website wording, area and services updated as you asked.</li>
 </ol>
 </div>
 </body>
