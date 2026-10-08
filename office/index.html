@@ -101,7 +101,7 @@ function canAddHours(cards, user, day, mins, today) {
 }
 // CORE END
 if (typeof module !== "undefined") { module.exports = { hourlyCents, invoiceLines, total, canAddHours }; }
-else {
+else (function () {   // a function scope, not a bare block: WebKit hoists block functions above the block's const (blank page in Safari, 10-08)
 const KEY = "hg_office_demo_v1", CREW = ["Shawn", "Paris", "Steve"];
 const pad = n => String(n).padStart(2, "0");
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -330,7 +330,7 @@ document.getElementById("reset").onclick = () => { if (confirm("Start the demo o
 const safe = () => { try { render(); app.classList.toggle("rail", !!app.querySelector(".tabs")); } catch (e) { app.innerHTML = '<h1>Something went wrong</h1><p class="hi">Tap "Start over" at the top.</p>'; } };
 window.addEventListener("hashchange", safe);
 safe();
-}
+})();
 </script>
 </body>
 </html>
