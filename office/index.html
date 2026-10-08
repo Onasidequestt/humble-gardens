@@ -135,8 +135,10 @@ const validDay = d => /^\d{4}-\d{2}-\d{2}$/.test(d || "") && iso(fromIso(d)) ===
 let S; try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
 if (!S || !Array.isArray(S.cards) || !Array.isArray(S.clients) || !S.invoices || !Array.isArray(S.expenses)) S = seed();
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
-let who = null; try { who = sessionStorage.getItem("hg_who"); } catch (e) {}
-const setWho = w => { who = w; try { w ? sessionStorage.setItem("hg_who", w) : sessionStorage.removeItem("hg_who"); } catch (e) {} };
+// You say who you are once; the device remembers and there is no switching. "Start over" (demo only) clears it with the sample data.
+let who = null; try { who = localStorage.getItem("hg_who"); } catch (e) {}
+if (who && who !== "Clark" && !CREW.includes(who)) who = null;
+const setWho = w => { who = w; try { w ? localStorage.setItem("hg_who", w) : localStorage.removeItem("hg_who"); } catch (e) {} };
 const app = document.getElementById("app");
 const go = h => { location.hash = h; };
 const clientOf = id => S.clients.find(c => c.id === id);
@@ -156,14 +158,14 @@ function prepare(m) {
 }
 
 function top(title) {
-  return `<div class="top"><h1>${E(title)}</h1><span>${E(who)} · <a href="#" data-out>Switch person</a></span></div>`;
+  return `<div class="top"><h1>${E(title)}</h1><span>${E(who)}</span></div>`;
 }
 
 function login() {
-  app.innerHTML = `<h1>Humble Gardens</h1><p class="hi">Who are you?</p><div class="who">
+  app.innerHTML = `<h1>Humble Gardens</h1><p class="hi">Who are you? Pick your name once. This device remembers you.</p><div class="who">
     <button data-who="Clark">Clark <small>owner</small></button>
     ${CREW.map(n => `<button data-who="${n}">${n} <small>crew</small></button>`).join("")}</div>
-    <p class="note">The real one has a password for each person.</p>`;
+    <p class="note">The real one has a password for each person, set up once by Clark.</p>`;
 }
 
 function crewWeek(q) {
@@ -316,17 +318,16 @@ function render() {
   return ownerDash(m);
 }
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-who],[data-out],[data-del],[data-prep],[data-sent],[data-pay]"); if (!t) return;
+  const t = e.target.closest("[data-who],[data-del],[data-prep],[data-sent],[data-pay]"); if (!t) return;
   e.preventDefault(); const d = t.dataset;
   if (d.who) { setWho(d.who); location.hash = ""; }
-  else if ("out" in d) { setWho(null); location.hash = ""; }
   else if (d.del) { if (!confirm("Remove this entry?")) return; S.cards = S.cards.filter(c => !(c.id === Number(d.del) && c.user === who)); save(); }
   else if (d.prep) prepare(d.prep);
   else if (d.sent) { const i = S.invoices[d.sent]; if (i.status === "draft") i.status = "sent"; save(); }
   else if (d.pay) { const [c, m, x] = d.pay.split("|"), i = S.invoices[c + "|" + m]; i.status = "paid"; i.paid_method = x; i.paid_on = TODAY; save(); }
   safe();
 });
-document.getElementById("reset").onclick = () => { if (confirm("Start the demo over with the sample data?")) { S = seed(); save(); setWho(null); location.hash = ""; safe(); } };
+document.getElementById("reset").onclick = () => { if (confirm("Start the demo over? This clears the sample data and who you are on this device.")) { S = seed(); save(); setWho(null); location.hash = ""; safe(); } };
 const safe = () => { try { render(); app.classList.toggle("rail", !!app.querySelector(".tabs")); } catch (e) { app.innerHTML = '<h1>Something went wrong</h1><p class="hi">Tap "Start over" at the top.</p>'; } };
 window.addEventListener("hashchange", safe);
 safe();
