@@ -23,7 +23,11 @@ a{color:var(--g)}
 .days{display:grid;gap:10px}
 .day{display:flex;justify-content:space-between;align-items:center;padding:20px;font-size:22px;border:2px solid var(--g);border-radius:12px;color:#1d3a25;text-decoration:none;background:#fff}
 .day small{font-size:16px;color:var(--mute);margin-left:6px}.day.done{background:var(--gl)}.day.today{border-width:4px}
-.day.future{border-color:#ddd;color:#bbb}.day i{font-size:16px;color:var(--mute)}
+.day.future{border-color:#ddd;color:#999;padding:12px 20px;font-size:18px}.day i{font-size:16px;color:var(--mute)}
+.day .l{display:flex;flex-direction:column}.day .jobs{font-size:14px;color:var(--mute);margin:2px 0 0}.day small{font-size:17px;color:#3c463f}.day.future small{color:#999}
+.saved{background:var(--gl);border:2px solid var(--g);border-radius:12px;padding:14px;font-size:20px}
+.stick{position:sticky;bottom:0;background:var(--bg);padding:6px 0 10px;margin-top:10px}.err{color:#a33;font-size:19px;margin:6px 0;min-height:1em}
+.sample{position:absolute;right:16px;top:12px;font-size:13px;letter-spacing:1px;color:#a07a1a;border:1px solid #d7b45a;background:var(--warn);padding:2px 8px;border-radius:6px}.inv{position:relative}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}.hrs{grid-template-columns:repeat(4,1fr)}
 .pick{display:block;position:relative}.pick input{position:absolute;opacity:0}
 .pick span{display:block;padding:20px 8px;text-align:center;font-size:20px;border:2px solid var(--g);border-radius:12px;cursor:pointer;background:#fff}
@@ -52,10 +56,10 @@ form.row label{font-size:14px;color:var(--mute)}form.row input{width:100%;font:i
 <div class="demo">Demo with sample clients and numbers. Changes stay on this device only. <button type="button" id="reset">Start over</button></div>
 <main id="app"></main>
 <script>
-// CORE START — same rules as the back office (app/core.py). Money in cents, time in minutes.
+// CORE START — billing rules. Money in cents, time in minutes.
 const hourlyCents = (mins, rate) => Math.floor((mins * rate + 30) / 60);   // half-up to the cent
 function invoiceLines(client, cards) {
-  // Clark 10-03: the flat price covers regular visits; hourly is only for extra work.
+  // The flat price covers regular visits; hourly is only for extra work.
   const reg = cards.filter(c => !c.extra).reduce((a, c) => a + c.mins, 0);
   const ext = cards.filter(c => c.extra).reduce((a, c) => a + c.mins, 0);
   const flat = client.flat, rate = client.rate, out = [];
@@ -106,7 +110,9 @@ function seed() {
   }
   return { clients, cards, invoices: {}, expenses: [{ id: 1, day: MONTH + "-02", cents: 8450, what: "Sample: fuel" }], next: id };
 }
-let S; try { S = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch (e) { S = seed(); }
+const validDay = d => /^\d{4}-\d{2}-\d{2}$/.test(d || "") && iso(fromIso(d)) === d;
+let S; try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+if (!S || !Array.isArray(S.cards) || !Array.isArray(S.clients) || !S.invoices || !Array.isArray(S.expenses)) S = seed();
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 let who = null; try { who = sessionStorage.getItem("hg_who"); } catch (e) {}
 const setWho = w => { who = w; try { w ? sessionStorage.setItem("hg_who", w) : sessionStorage.removeItem("hg_who"); } catch (e) {} };
@@ -123,7 +129,7 @@ function prepare(m) {
     const k = c.id + "|" + m, inv = S.invoices[k];
     if (inv && inv.status !== "draft") continue;   // sent/paid invoices are never rebuilt
     const lines = invoiceLines(c, monthCards(c.id, m));
-    S.invoices[k] = { client: c.id, month: m, status: "draft", lines, no: (inv && inv.no) || Object.keys(S.invoices).length + 1 };
+    S.invoices[k] = { client: c.id, month: m, status: "draft", lines, issued: TODAY, no: (inv && inv.no) || Object.keys(S.invoices).length + 1 };
   }
   save();
 }
@@ -140,42 +146,50 @@ function login() {
 }
 
 function crewWeek(q) {
-  let w = q.w || TODAY; if (w > TODAY) w = TODAY;
+  let w = validDay(q.w) ? q.w : TODAY; if (w > TODAY) w = TODAY;
   const dow = (fromIso(w).getDay() + 6) % 7, mon = addDays(w, -dow);
   const days = [...Array(7)].map((_, i) => addDays(mon, i));
-  const got = {}; for (const c of S.cards) if (c.user === who && c.day >= days[0] && c.day <= days[6]) got[c.day] = (got[c.day] || 0) + c.mins;
+  const got = {}, jobs = {};
+  for (const c of S.cards) if (c.user === who && c.day >= days[0] && c.day <= days[6]) { got[c.day] = (got[c.day] || 0) + c.mins; (jobs[c.day] = jobs[c.day] || []).push(clientOf(c.client).name); }
   const tiles = days.map(d => {
     const dt = fromIso(d), lab = `<em style="font-style:normal">${dt.toLocaleString("en-US", { weekday: "short" })} <small>${dt.toLocaleString("en-US", { month: "short" })} ${dt.getDate()}</small></em>`;
     const m = got[d] || 0;
-    if (d > TODAY) return `<div class="day future">${lab}<span></span></div>`;
-    return `<a class="day${m ? " done" : ""}${d === TODAY ? " today" : ""}" href="#day/${d}">${lab}<span>${m ? `<b>${hrs(m)}</b>` : "<i>tap to add</i>"}</span></a>`;
+    if (d > TODAY) return `<div class="day future">${lab}<span><i>later</i></span></div>`;
+    const j = jobs[d] ? `<small class="jobs">${[...new Set(jobs[d])].map(E).join(", ")}</small>` : "";
+    return `<a class="day${m ? " done" : ""}${d === TODAY ? " today" : ""}" href="#day/${d}"><span class="l">${lab}${j}</span><span>${m ? `<b>${hrs(m)}</b>` : "<i>tap to add</i>"}</span></a>`;
   }).join("");
   const next = addDays(mon, 7);
   const sum = Object.values(got).reduce((a, b) => a + b, 0);
-  app.innerHTML = top("My hours") + `<p class="hi">Aloha ${E(who)}. Tap a day to put in your hours.</p>
+  const saved = q.saved ? `<p class="saved">Saved: ${E(q.saved)}</p>` : "";
+  app.innerHTML = top("My hours") + saved + `<p class="hi">Aloha ${E(who)}. Tap a day, pick the job and the hours.</p>
     <p class="wk"><a href="#week/${addDays(mon, -7)}">&larr; Last week</a>${next <= TODAY ? `<a href="#week/${next}">Next week &rarr;</a>` : ""}</p>
     <div class="days">${tiles}</div><p class="total">This week: <b>${hrs(sum)}</b></p>`;
 }
 
 function crewDay(d, err) {
-  if (d > TODAY) return go("");
+  if (!validDay(d) || d > TODAY) return go("");
   const dt = fromIso(d);
   const have = S.cards.filter(c => c.user === who && c.day === d).map(c =>
     `<li>${E(clientOf(c.client).name)}${c.extra ? " (extra work)" : ""}: <b>${hrs(c.mins)}</b> <button class="btn" data-del="${c.id}">Remove</button></li>`).join("");
-  const jobs = S.clients.map(c => `<label class="pick"><input type="radio" name="client" value="${c.id}" required><span>${E(c.name)}</span></label>`).join("");
-  const tiles = [...Array(20)].map((_, i) => `<label class="pick"><input type="radio" name="mins" value="${(i + 1) * 30}" required><span>${hrs((i + 1) * 30)}</span></label>`).join("");
+  const jobs = S.clients.map(c => `<label class="pick"><input type="radio" name="client" value="${c.id}"><span>${E(c.name)}</span></label>`).join("");
+  const tiles = [...Array(20)].map((_, i) => `<label class="pick"><input type="radio" name="mins" value="${(i + 1) * 30}"><span>${hrs((i + 1) * 30)}</span></label>`).join("");
   app.innerHTML = top("My hours") + `<p><a href="#week/${d}">&larr; Back to the week</a></p>
-    <h2 style="font-size:28px">${dt.toLocaleString("en-US", { weekday: "long", month: "long" })} ${dt.getDate()}</h2>
+    <h2 style="font-size:28px">${dt.toLocaleString("en-US", { weekday: "long" })}, ${dt.toLocaleString("en-US", { month: "long" })} ${dt.getDate()}</h2>
     ${err ? `<p style="color:#a33;font-size:20px">${E(err)}</p>` : ""}
     ${have ? `<h2>Already in</h2><ul class="have">${have}</ul>` : ""}
     <form id="hours"><h2>1. Which job?</h2><div class="grid">${jobs}</div>
     <h2>2. How many hours?</h2><div class="grid hrs">${tiles}</div>
-    <label class="pick wide"><input type="checkbox" name="extra"><span>Extra work (not the regular visit)</span></label>
-    <button class="big">Save</button></form>`;
-  document.getElementById("hours").onsubmit = e => {
-    e.preventDefault(); const f = new FormData(e.target), mins = Number(f.get("mins"));
-    const bad = canAddHours(S.cards, who, d, mins, TODAY); if (bad) return crewDay(d, bad);
-    S.cards.push({ id: S.next++, user: who, client: Number(f.get("client")), day: d, mins, extra: f.get("extra") === "on" }); save(); go("week/" + d);
+    <label class="pick wide"><input type="checkbox" name="extra"><span>This was extra work, on top of the usual visit</span></label>
+    <div class="stick"><p id="msg" class="err"></p><button class="big" id="savebtn">Save</button></div></form>`;
+  const form = document.getElementById("hours"), btn = document.getElementById("savebtn"), msg = document.getElementById("msg");
+  form.oninput = () => { const f = new FormData(form), c = f.get("client"), m = f.get("mins"); msg.textContent = "";
+    btn.textContent = c && m ? `Save ${hrs(Number(m))} at ${clientOf(Number(c)).name}` : c ? "Now pick the hours" : m ? "Now pick the job" : "Save"; };
+  form.onsubmit = e => {
+    e.preventDefault(); const f = new FormData(form), mins = Number(f.get("mins")), cid = Number(f.get("client"));
+    if (!cid) { msg.textContent = "Pick a job first."; return; } if (!mins) { msg.textContent = "Pick the hours."; return; }
+    const bad = canAddHours(S.cards, who, d, mins, TODAY); if (bad) { msg.textContent = bad; return; }
+    S.cards.push({ id: S.next++, user: who, client: cid, day: d, mins, extra: f.get("extra") === "on" }); save();
+    location.hash = `week/${d}?saved=${encodeURIComponent(hrs(mins) + " at " + clientOf(cid).name + " on " + fromIso(d).toLocaleString("en-US", { weekday: "long" }))}`;
   };
 }
 
@@ -195,12 +209,12 @@ function ownerDash(m) {
   const exp = S.expenses.filter(x => x.day.startsWith(m)).reduce((a, x) => a + x.cents, 0);
   const mins = S.cards.filter(c => c.day.startsWith(m)).reduce((a, c) => a + c.mins, 0);
   const per = S.clients.map(c => { const cs = monthCards(c.id, m), i = invoice(c.id, m);
-    return `<tr><td>${E(c.name)}</td><td class="n">${hrs(cs.reduce((a, x) => a + x.mins, 0)) || "0"}</td><td class="n">${hrs(cs.filter(x => x.extra).reduce((a, x) => a + x.mins, 0)) || "—"}</td><td class="n">${i ? money(total(i.lines)) : "—"}</td></tr>`; }).join("");
+    return `<tr><td>${E(c.name)}</td><td class="n">${(t => t ? hrs(t) : "0")(cs.reduce((a, x) => a + x.mins, 0))}</td><td class="n">${(ex => ex ? hrs(ex) : "—")(cs.filter(x => x.extra).reduce((a, x) => a + x.mins, 0))}</td><td class="n">${i ? money(total(i.lines)) : "—"}</td></tr>`; }).join("");
   app.innerHTML = top("Office") + ownerTabs("Dashboard", m) + monthNav("m/", m) + `
     <div class="tiles"><div class="tile"><span>Invoiced</span><b>${money(sum())}</b></div><div class="tile"><span>Paid</span><b>${money(sum("paid"))}</b></div>
-    <div class="tile"><span>Owed (sent)</span><b>${money(sum("sent"))}</b></div><div class="tile"><span>Expenses</span><b>${money(exp)}</b></div>
-    <div class="tile"><span>Crew hours</span><b>${mins ? hrs(mins) : "0"}</b></div></div>
-    ${inv.length ? "" : `<p class="note">No invoices for ${monthName(m)} yet. Go to Invoices and press Prepare.</p>`}
+    <div class="tile"><span>Owed (sent, unpaid)</span><b>${money(sum("sent"))}</b></div><div class="tile"><span>Expenses (sample)</span><b>${money(exp)}</b></div>
+    <div class="tile"><span>Crew hours (sample)</span><b>${mins ? hrs(mins) : "0"}</b></div></div>
+    ${inv.length ? `<p class="note">${inv.filter(i => i.status === "draft").length} draft${inv.filter(i => i.status === "draft").length === 1 ? "" : "s"} (${money(sum("draft"))}) not sent yet. Invoiced counts drafts too.</p>` : `<p class="note">No invoices for ${monthName(m)} yet. Go to Invoices and press Prepare.</p>`}
     <h2>By client</h2><div class="scroll"><table><tr><th>Client</th><th class="n">Hours</th><th class="n">Extra</th><th class="n">Invoice</th></tr>${per}</table></div>`;
 }
 
@@ -215,17 +229,20 @@ function ownerInvoices(m) {
 
 function ownerInvoice(cid, m) {
   const c = clientOf(cid), i = invoice(cid, m); if (!i) return go("invoices/" + m);
-  const lines = i.lines.map(l => `<tr><td>${E(l.descr)}</td><td class="n">${l.mins ? hrs(l.mins) : ""}</td><td class="n">${money(l.cents)}</td></tr>`).join("");
+  const lines = i.lines.filter(l => l.cents).map(l => `<tr><td>${E(l.descr)}</td><td class="n">${l.mins ? hrs(l.mins) : ""}</td><td class="n">${money(l.cents)}</td></tr>`).join("");
+  const incl = i.lines.filter(l => !l.cents && l.mins).map(l => `${hrs(l.mins)} of regular visits included in the monthly service`).join("; ");
   app.innerHTML = top("Office") + `<p class="noprint"><a href="#invoices/${m}">&larr; All invoices</a></p>
-    <div class="inv"><h3>Humble Gardens</h3><div class="sub">Big Island, Hawaii · 808-987-0674</div>
+    <div class="inv"><div class="sample">SAMPLE</div><h3>Humble Gardens</h3><div class="sub">Big Island, Hawaii · 808-987-0674</div>
     <h2 style="margin-top:20px">Invoice ${m}-${String(i.no).padStart(4, "0")}</h2><p>Billed to: <b>${E(c.name)}</b><br>${E(c.property)}</p>
+    <p class="sub">Date: ${fromIso(i.issued || TODAY).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} · Due: ${fromIso(addDays(i.issued || TODAY, 14)).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
     <table><tr><th>Description</th><th class="n">Hours</th><th class="n">Amount</th></tr>${lines}
     <tr><td><b>Total</b></td><td></td><td class="n"><b>${money(total(i.lines))}</b></td></tr></table>
+    ${incl ? `<p class="sub">${incl}.</p>` : ""}<p>Pay by cash, check, or bank transfer. Mahalo!</p>
     ${i.status === "paid" ? `<p>Paid by ${E(i.paid_method)} on ${E(i.paid_on)}. Mahalo.</p>` : ""}</div>
     <div class="acts"><button class="btn fill" onclick="print()">Print / save as PDF</button>
-    ${i.status === "draft" ? `<button class="btn" data-sent="${cid}|${m}">Mark sent</button>` : ""}
+    ${i.status === "draft" ? `<button class="btn" data-sent="${cid}|${m}">Mark as sent (you send it yourself)</button>` : ""}
     ${i.status !== "paid" ? ["cash", "check", "bank"].map(x => `<button class="btn" data-pay="${cid}|${m}|${x}">Paid by ${x}</button>`).join("") : ""}</div>
-    <p class="note noprint">In the real one, this PDF attaches to an email you send yourself.</p>`;
+    <p class="note noprint">In the real one, this invoice becomes a PDF attached to an email that you send yourself.</p>`;
 }
 
 function ownerHours(m) {
@@ -246,7 +263,7 @@ function ownerClients(m) {
     <label>Flat $ per month<input name="flat" inputmode="decimal" value="0"></label><label>Hourly $ (extra work)<input name="rate" inputmode="decimal" value="0"></label>
     <button class="btn fill">Add</button></form>`;
   document.getElementById("cl").onsubmit = e => { e.preventDefault(); const f = new FormData(e.target);
-    S.clients.push({ id: Math.max(...S.clients.map(c => c.id)) + 1, name: f.get("name"), property: f.get("property"), flat: Math.round(Number(f.get("flat") || 0) * 100), rate: Math.round(Number(f.get("rate") || 0) * 100) }); save(); render(); };
+    S.clients.push({ id: Math.max(...S.clients.map(c => c.id)) + 1, name: f.get("name"), property: f.get("property"), flat: Math.round(Number(f.get("flat") || 0) * 100), rate: Math.round(Number(f.get("rate") || 0) * 100) }); save(); safe(); };
 }
 
 function ownerExpenses(m) {
@@ -256,13 +273,13 @@ function ownerExpenses(m) {
     <h2>Add an expense</h2><form class="row" id="ex"><label>Day<input name="day" type="date" value="${TODAY}" required></label><label>What for<input name="what" required></label>
     <label>Amount $<input name="amt" inputmode="decimal" required></label><button class="btn fill">Add</button></form>`;
   document.getElementById("ex").onsubmit = e => { e.preventDefault(); const f = new FormData(e.target);
-    S.expenses.push({ id: S.expenses.length + 1, day: f.get("day"), what: f.get("what"), cents: Math.round(Number(f.get("amt")) * 100) }); save(); render(); };
+    S.expenses.push({ id: S.expenses.length + 1, day: f.get("day"), what: f.get("what"), cents: Math.round(Number(f.get("amt")) * 100) }); save(); safe(); };
 }
 
 function render() {
   if (!who) return login();
-  const [r, a, b] = (location.hash.slice(1) || "").split("/");
-  if (who !== "Clark") return r === "day" ? crewDay(a) : crewWeek({ w: r === "week" ? a : "" });
+  const [path, qs] = (location.hash.slice(1) || "").split("?"), [r, a, b] = path.split("/"), q = Object.fromEntries(new URLSearchParams(qs || ""));
+  if (who !== "Clark") return r === "day" ? crewDay(a) : crewWeek({ w: r === "week" ? a : "", saved: q.saved });
   const m = /^\d{4}-\d{2}$/.test(a || "") ? a : MONTH;
   if (r === "invoices") return ownerInvoices(m);
   if (r === "invoice") return ownerInvoice(Number(a), b);
@@ -276,15 +293,16 @@ document.addEventListener("click", e => {
   e.preventDefault(); const d = t.dataset;
   if (d.who) { setWho(d.who); location.hash = ""; }
   else if ("out" in d) { setWho(null); location.hash = ""; }
-  else if (d.del) { S.cards = S.cards.filter(c => !(c.id === Number(d.del) && c.user === who)); save(); }
+  else if (d.del) { if (!confirm("Remove this entry?")) return; S.cards = S.cards.filter(c => !(c.id === Number(d.del) && c.user === who)); save(); }
   else if (d.prep) prepare(d.prep);
   else if (d.sent) { const i = S.invoices[d.sent]; if (i.status === "draft") i.status = "sent"; save(); }
   else if (d.pay) { const [c, m, x] = d.pay.split("|"), i = S.invoices[c + "|" + m]; i.status = "paid"; i.paid_method = x; i.paid_on = TODAY; save(); }
-  render();
+  safe();
 });
-document.getElementById("reset").onclick = () => { if (confirm("Start the demo over with the sample data?")) { S = seed(); save(); setWho(null); location.hash = ""; render(); } };
-window.addEventListener("hashchange", render);
-render();
+document.getElementById("reset").onclick = () => { if (confirm("Start the demo over with the sample data?")) { S = seed(); save(); setWho(null); location.hash = ""; safe(); } };
+const safe = () => { try { render(); } catch (e) { app.innerHTML = '<h1>Something went wrong</h1><p class="hi">Tap "Start over" at the top.</p>'; } };
+window.addEventListener("hashchange", safe);
+safe();
 }
 </script>
 </body>
