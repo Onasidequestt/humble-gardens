@@ -23,10 +23,11 @@ a{color:var(--g)}
 .days{display:grid;gap:10px}
 .day{display:flex;justify-content:space-between;align-items:center;padding:20px;font-size:22px;border:2px solid var(--g);border-radius:12px;color:#1d3a25;text-decoration:none;background:#fff}
 .day small{font-size:16px;color:var(--mute);margin-left:6px}.day.done{background:var(--gl)}.day.today{border-width:4px}
-.day.future{border-color:#ddd;color:#999;padding:12px 20px;font-size:18px}.day i{font-size:16px;color:var(--mute)}
-.day .l{display:flex;flex-direction:column}.day .jobs{font-size:14px;color:var(--mute);margin:2px 0 0}.day small{font-size:17px;color:#3c463f}.day.future small{color:#999}
+.day.future{border-color:#ddd;color:#666;padding:12px 20px;font-size:18px}.day i{font-size:16px;color:var(--mute)}
+.day .l{display:flex;flex-direction:column}.day .jobs{font-size:14px;color:var(--mute);margin:2px 0 0}.day small{font-size:17px;color:#3c463f}.day.future small{color:#666}
 .saved{background:var(--gl);border:2px solid var(--g);border-radius:12px;padding:14px;font-size:20px}
-.stick{position:sticky;bottom:0;background:var(--bg);padding:6px 0 10px;margin-top:10px}.err{color:#a33;font-size:19px;margin:6px 0;min-height:1em}
+.stick{position:fixed;left:0;right:0;bottom:0;background:var(--bg);padding:6px 16px 12px;box-shadow:0 -6px 16px rgba(0,0,0,.08)}.stick .big{margin-top:4px}.stick .big small{display:block;font-size:17px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.entry main{padding-bottom:150px}.err{color:#a33;font-size:19px;margin:6px 0;min-height:1em}
 .sample{position:absolute;right:16px;top:12px;font-size:13px;letter-spacing:1px;color:#a07a1a;border:1px solid #d7b45a;background:var(--warn);padding:2px 8px;border-radius:6px}.inv{position:relative}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}.hrs{grid-template-columns:repeat(4,1fr)}
 .pick{display:block;position:relative}.pick input{position:absolute;opacity:0}
@@ -129,7 +130,7 @@ function prepare(m) {
     const k = c.id + "|" + m, inv = S.invoices[k];
     if (inv && inv.status !== "draft") continue;   // sent/paid invoices are never rebuilt
     const lines = invoiceLines(c, monthCards(c.id, m));
-    S.invoices[k] = { client: c.id, month: m, status: "draft", lines, issued: TODAY, no: (inv && inv.no) || Object.keys(S.invoices).length + 1 };
+    S.invoices[k] = { client: c.id, month: m, status: "draft", lines, issued: TODAY, no: (inv && inv.no) || Math.max(0, ...Object.values(S.invoices).map(i => i.no)) + 1 };
   }
   save();
 }
@@ -160,7 +161,7 @@ function crewWeek(q) {
   }).join("");
   const next = addDays(mon, 7);
   const sum = Object.values(got).reduce((a, b) => a + b, 0);
-  const saved = q.saved ? `<p class="saved">Saved: ${E(q.saved)}</p>` : "";
+  const saved = q.saved && /^[\d½]+ hrs? at .+ on [A-Z][a-z]+day$/.test(q.saved) ? `<p class="saved">Saved: ${E(q.saved)}</p>` : "";
   app.innerHTML = top("My hours") + saved + `<p class="hi">Aloha ${E(who)}. Tap a day, pick the job and the hours.</p>
     <p class="wk"><a href="#week/${addDays(mon, -7)}">&larr; Last week</a>${next <= TODAY ? `<a href="#week/${next}">Next week &rarr;</a>` : ""}</p>
     <div class="days">${tiles}</div><p class="total">This week: <b>${hrs(sum)}</b></p>`;
@@ -168,6 +169,7 @@ function crewWeek(q) {
 
 function crewDay(d, err) {
   if (!validDay(d) || d > TODAY) return go("");
+  document.body.classList.add("entry");
   const dt = fromIso(d);
   const have = S.cards.filter(c => c.user === who && c.day === d).map(c =>
     `<li>${E(clientOf(c.client).name)}${c.extra ? " (extra work)" : ""}: <b>${hrs(c.mins)}</b> <button class="btn" data-del="${c.id}">Remove</button></li>`).join("");
@@ -183,7 +185,7 @@ function crewDay(d, err) {
     <div class="stick"><p id="msg" class="err"></p><button class="big" id="savebtn">Save</button></div></form>`;
   const form = document.getElementById("hours"), btn = document.getElementById("savebtn"), msg = document.getElementById("msg");
   form.oninput = () => { const f = new FormData(form), c = f.get("client"), m = f.get("mins"); msg.textContent = "";
-    btn.textContent = c && m ? `Save ${hrs(Number(m))} at ${clientOf(Number(c)).name}` : c ? "Now pick the hours" : m ? "Now pick the job" : "Save"; };
+    btn.innerHTML = c && m ? `Save ${hrs(Number(m))}<small>${E(clientOf(Number(c)).name)}</small>` : c ? "Now pick the hours" : m ? "Now pick the job" : "Save"; };
   form.onsubmit = e => {
     e.preventDefault(); const f = new FormData(form), mins = Number(f.get("mins")), cid = Number(f.get("client"));
     if (!cid) { msg.textContent = "Pick a job first."; return; } if (!mins) { msg.textContent = "Pick the hours."; return; }
@@ -209,7 +211,7 @@ function ownerDash(m) {
   const exp = S.expenses.filter(x => x.day.startsWith(m)).reduce((a, x) => a + x.cents, 0);
   const mins = S.cards.filter(c => c.day.startsWith(m)).reduce((a, c) => a + c.mins, 0);
   const per = S.clients.map(c => { const cs = monthCards(c.id, m), i = invoice(c.id, m);
-    return `<tr><td>${E(c.name)}</td><td class="n">${(t => t ? hrs(t) : "0")(cs.reduce((a, x) => a + x.mins, 0))}</td><td class="n">${(ex => ex ? hrs(ex) : "—")(cs.filter(x => x.extra).reduce((a, x) => a + x.mins, 0))}</td><td class="n">${i ? money(total(i.lines)) : "—"}</td></tr>`; }).join("");
+    return `<tr><td>${E(c.name)}</td><td class="n">${(t => t ? hrs(t) : "0")(cs.reduce((a, x) => a + x.mins, 0))}</td><td class="n">${(ex => ex ? hrs(ex) : "—")(cs.filter(x => x.extra).reduce((a, x) => a + x.mins, 0))}</td><td class="n">${i ? money(total(i.lines)) + ` <span class="status ${i.status}">${i.status}</span>` : "—"}</td></tr>`; }).join("");
   app.innerHTML = top("Office") + ownerTabs("Dashboard", m) + monthNav("m/", m) + `
     <div class="tiles"><div class="tile"><span>Invoiced</span><b>${money(sum())}</b></div><div class="tile"><span>Paid</span><b>${money(sum("paid"))}</b></div>
     <div class="tile"><span>Owed (sent, unpaid)</span><b>${money(sum("sent"))}</b></div><div class="tile"><span>Expenses (sample)</span><b>${money(exp)}</b></div>
@@ -220,7 +222,8 @@ function ownerDash(m) {
 
 function ownerInvoices(m) {
   const rows = S.clients.map(c => { const i = invoice(c.id, m); if (!i) return "";
-    return `<tr><td><a href="#invoice/${c.id}/${m}">${E(c.name)}</a></td><td class="n">${money(total(i.lines))}</td><td><span class="status ${i.status}">${i.status}${i.paid_method ? " · " + i.paid_method : ""}</span></td></tr>`; }).join("");
+    const basis = [c.flat ? `flat ${money(c.flat)}` : "", ...i.lines.filter(l => l.cents && l.mins).map(l => `${hrs(l.mins)} × ${money(c.rate)}/h`)].filter(Boolean).join(" + ") || "no charge";
+    return `<tr><td><a href="#invoice/${c.id}/${m}">${E(c.name)}</a><br><span class="note">${basis}</span></td><td class="n">${money(total(i.lines))}</td><td><span class="status ${i.status}">${i.status}${i.paid_method ? " · " + i.paid_method : ""}</span></td></tr>`; }).join("");
   app.innerHTML = top("Office") + ownerTabs("Invoices", m) + monthNav("invoices/", m) + `
     <button class="big" data-prep="${m}" style="margin-top:6px">Prepare invoices for ${monthName(m)}</button>
     <p class="note">Builds a draft for every client from the crew's hours. Drafts update each time you press it; sent and paid invoices stay as they are.</p>
@@ -229,14 +232,15 @@ function ownerInvoices(m) {
 
 function ownerInvoice(cid, m) {
   const c = clientOf(cid), i = invoice(cid, m); if (!i) return go("invoices/" + m);
-  const lines = i.lines.filter(l => l.cents).map(l => `<tr><td>${E(l.descr)}</td><td class="n">${l.mins ? hrs(l.mins) : ""}</td><td class="n">${money(l.cents)}</td></tr>`).join("");
+  const lines = i.lines.filter(l => l.cents).map(l => `<tr><td>${E(l.descr)}</td>${i.lines.some(x => x.cents && x.mins) ? `<td class="n">${l.mins ? hrs(l.mins) : ""}</td>` : ""}<td class="n">${money(l.cents)}</td></tr>`).join("");
+  const hasHrs = i.lines.some(l => l.cents && l.mins);
   const incl = i.lines.filter(l => !l.cents && l.mins).map(l => `${hrs(l.mins)} of regular visits included in the monthly service`).join("; ");
   app.innerHTML = top("Office") + `<p class="noprint"><a href="#invoices/${m}">&larr; All invoices</a></p>
     <div class="inv"><div class="sample">SAMPLE</div><h3>Humble Gardens</h3><div class="sub">Big Island, Hawaii · 808-987-0674</div>
     <h2 style="margin-top:20px">Invoice ${m}-${String(i.no).padStart(4, "0")}</h2><p>Billed to: <b>${E(c.name)}</b><br>${E(c.property)}</p>
     <p class="sub">Date: ${fromIso(i.issued || TODAY).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} · Due: ${fromIso(addDays(i.issued || TODAY, 14)).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
-    <table><tr><th>Description</th><th class="n">Hours</th><th class="n">Amount</th></tr>${lines}
-    <tr><td><b>Total</b></td><td></td><td class="n"><b>${money(total(i.lines))}</b></td></tr></table>
+    <table><tr><th>Description</th>${hasHrs ? '<th class="n">Hours</th>' : ""}<th class="n">Amount</th></tr>${lines}
+    <tr><td><b>Total</b></td>${hasHrs ? "<td></td>" : ""}<td class="n"><b>${money(total(i.lines))}</b></td></tr></table>
     ${incl ? `<p class="sub">${incl}.</p>` : ""}<p>Pay by cash, check, or bank transfer. Mahalo!</p>
     ${i.status === "paid" ? `<p>Paid by ${E(i.paid_method)} on ${E(i.paid_on)}. Mahalo.</p>` : ""}</div>
     <div class="acts"><button class="btn fill" onclick="print()">Print / save as PDF</button>
@@ -263,6 +267,7 @@ function ownerClients(m) {
     <label>Flat $ per month<input name="flat" inputmode="decimal" value="0"></label><label>Hourly $ (extra work)<input name="rate" inputmode="decimal" value="0"></label>
     <button class="btn fill">Add</button></form>`;
   document.getElementById("cl").onsubmit = e => { e.preventDefault(); const f = new FormData(e.target);
+    if (![f.get("flat") || 0, f.get("rate") || 0].every(v => isFinite(Number(v)) && Number(v) >= 0)) return alert("Please enter the prices as numbers, like 250 or 45.50.");
     S.clients.push({ id: Math.max(...S.clients.map(c => c.id)) + 1, name: f.get("name"), property: f.get("property"), flat: Math.round(Number(f.get("flat") || 0) * 100), rate: Math.round(Number(f.get("rate") || 0) * 100) }); save(); safe(); };
 }
 
@@ -273,14 +278,16 @@ function ownerExpenses(m) {
     <h2>Add an expense</h2><form class="row" id="ex"><label>Day<input name="day" type="date" value="${TODAY}" required></label><label>What for<input name="what" required></label>
     <label>Amount $<input name="amt" inputmode="decimal" required></label><button class="btn fill">Add</button></form>`;
   document.getElementById("ex").onsubmit = e => { e.preventDefault(); const f = new FormData(e.target);
-    S.expenses.push({ id: S.expenses.length + 1, day: f.get("day"), what: f.get("what"), cents: Math.round(Number(f.get("amt")) * 100) }); save(); safe(); };
+    if (!isFinite(Number(f.get("amt"))) || Number(f.get("amt")) <= 0) return alert("Please enter the amount as a number, like 84.50.");
+    S.expenses.push({ id: Math.max(0, ...S.expenses.map(x => x.id)) + 1, day: f.get("day"), what: f.get("what"), cents: Math.round(Number(f.get("amt")) * 100) }); save(); safe(); };
 }
 
 function render() {
+  document.body.classList.remove("entry"); scrollTo(0, 0);
   if (!who) return login();
   const [path, qs] = (location.hash.slice(1) || "").split("?"), [r, a, b] = path.split("/"), q = Object.fromEntries(new URLSearchParams(qs || ""));
   if (who !== "Clark") return r === "day" ? crewDay(a) : crewWeek({ w: r === "week" ? a : "", saved: q.saved });
-  const m = /^\d{4}-\d{2}$/.test(a || "") ? a : MONTH;
+  const m = /^\d{4}-(0[1-9]|1[0-2])$/.test(a || "") && a <= MONTH ? a : MONTH;
   if (r === "invoices") return ownerInvoices(m);
   if (r === "invoice") return ownerInvoice(Number(a), b);
   if (r === "hours") return ownerHours(m);
