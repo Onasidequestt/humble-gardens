@@ -50,6 +50,10 @@ form.row label{font-size:14px;color:var(--mute)}form.row input{width:100%;font:i
 .inv h3{margin:0;font-size:26px}.inv .sub{color:var(--mute);font-size:14px}
 .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .scroll{overflow-x:auto}
+.logo{display:block;height:120px;width:auto;margin:6px 0 4px}.inv .logo{height:96px;margin:0 0 10px}.invhead{display:flex;gap:18px;align-items:flex-start}
+.ticks{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.ticks .pick span{padding:12px 6px;font-size:17px}
+.notes label{display:block;font-size:18px;margin:14px 0 4px}.notes textarea,.notes input[type=text],.inv textarea{width:100%;font:inherit;font-size:17px;padding:10px;border:1px solid var(--line);border-radius:8px}
+.nb{color:var(--mute)}.print-only{display:none}.work td{font-size:15px}
 @media screen and (min-width:900px){
 main{max-width:1120px;padding:16px 32px 60px}
 .who{grid-template-columns:1fr 1fr;width:100%;max-width:720px;margin:12px auto 0}body:has(.who) main{text-align:center;min-height:72vh;display:flex;flex-direction:column;justify-content:center}body:has(.who) .who button{text-align:left}
@@ -66,11 +70,11 @@ main.rail .tabs{grid-column:1;grid-row:2/span 99;flex-direction:column;gap:4px;p
 main.rail .tabs a:not(.on):hover{background:var(--gl)}main.rail .tabs a:focus-visible{outline:3px solid #e0a020}
 main.rail .tabs a{padding:12px 16px;border-radius:10px;border-color:transparent;font-size:18px}main.rail .tabs a.on{border-color:var(--g)}
 main.rail>:not(.top):not(.tabs){grid-column:2}main.rail h2:first-of-type{margin-top:8px}
-.tiles{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.tile{padding:14px 16px;display:flex;flex-direction:column;min-height:104px}.tile span{font-size:14px;line-height:1.4}.tile b{margin-top:auto}
+.tiles{grid-template-columns:repeat(auto-fit,minmax(125px,1fr))}.tile{padding:14px 16px;display:flex;flex-direction:column;min-height:104px}.tile span{font-size:14px;line-height:1.4}.tile b{margin-top:auto}
 .inv{width:680px;max-width:100%;min-height:880px;padding:56px 64px 48px;margin:18px 0 0;box-shadow:0 2px 14px rgba(0,0,0,.08)}.inv h2{font-size:26px}main.rail .big{margin-bottom:24px;padding:16px;font-size:21px}
 .acts{margin:12px 0 0;flex-wrap:nowrap}.acts .btn{padding:8px 12px;white-space:nowrap}.acts .status{align-self:center;font-size:16px}
 }
-@media print{.demo,.top,.tabs,.acts,.noprint{display:none!important}.inv{border:0;padding:0;width:auto;max-width:none;min-height:0;margin:0}main,main.rail{display:block;padding:0;max-width:none}}
+@media print{.print-only{display:inline!important}.inv textarea{display:none!important}.demo,.top,.tabs,.acts,.noprint,.inv textarea+button{display:none!important}.inv{border:0;padding:0;width:auto;max-width:none;min-height:0;margin:0}main,main.rail{display:block;padding:0;max-width:none}}
 </style>
 </head>
 <body>
@@ -80,6 +84,7 @@ main.rail>:not(.top):not(.tabs){grid-column:2}main.rail h2:first-of-type{margin-
 // CORE START — billing rules. Money in cents, time in minutes.
 const hourlyCents = (mins, rate) => Math.floor((mins * rate + 30) / 60);   // half-up to the cent
 function invoiceLines(client, cards) {
+  cards = billableCards(cards);   // non-client labour is never billed
   // The flat price covers regular visits; hourly is only for extra work.
   const reg = cards.filter(c => !c.extra).reduce((a, c) => a + c.mins, 0);
   const ext = cards.filter(c => c.extra).reduce((a, c) => a + c.mins, 0);
@@ -99,8 +104,26 @@ function canAddHours(cards, user, day, mins, today) {
   if (have + mins > 960) return "That's more than 16 hours on one day.";
   return "";
 }
+// Non-client labour (Clark 10-08): counts as crew hours, never billed. Cards carry cat instead of a client.
+const NONBILL = ["Drive Time/Dump Run", "Supply/Materials Pick-up", "Company/Office Work", "Truck Maintenance", "Other"];
+const TASKS = ["hedging", "mowing", "weed whacking", "weeding", "pest spraying", "fertilization", "pruning", "tree trimming", "irrigation repairs", "irrigation checks", "dump run", "new planting", "tree removal", "blowing", "hand watering", "debris removal", "digging", "pole saw cutting", "equipment repair", "truck fueling", "misc"];
+const billableCards = cards => cards.filter(c => !c.cat);
+const nonBillMins = cards => cards.filter(c => c.cat).reduce((a, c) => a + c.mins, 0);
+// One draft-invoice note per day the crew worked at this client: ticked items + "what did you do" + "client needs to know".
+function dayNotes(cards, logs) {
+  const out = {};
+  for (const c of billableCards(cards)) {
+    const l = logs[c.user + "|" + c.day] || {}, t = out[c.day] || (out[c.day] = { tasks: [], text: [] });
+    for (const x of [...(l.tasks || []), ...(l.tags || [])]) if (!t.tasks.includes(x)) t.tasks.push(x);
+    for (const x of [l.did, l.client]) if (x && !t.text.includes(x)) t.text.push(x);
+  }
+  return Object.keys(out).sort().map(day => { const t = out[day], a = t.tasks.join(", ");
+    return { day, text: [a && a[0].toUpperCase() + a.slice(1), ...t.text].filter(Boolean).join(". ") }; }).filter(n => n.text);
+}
+// Rebuilding a draft keeps any day note Clark has edited.
+const mergeNotes = (old, fresh) => fresh.map(n => { const o = (old || []).find(x => x.day === n.day && x.edited); return o || n; });
 // CORE END
-if (typeof module !== "undefined") { module.exports = { hourlyCents, invoiceLines, total, canAddHours }; }
+if (typeof module !== "undefined") { module.exports = { hourlyCents, invoiceLines, total, canAddHours, NONBILL, TASKS, billableCards, nonBillMins, dayNotes, mergeNotes }; }
 else (function () {   // a function scope, not a bare block: WebKit hoists block functions above the block's const (blank page in Safari, 10-08)
 const KEY = "hg_office_demo_v1", CREW = ["Shawn", "Paris", "Steve"];
 const pad = n => String(n).padStart(2, "0");
@@ -111,6 +134,10 @@ const TODAY = iso(new Date()), MONTH = TODAY.slice(0, 7);
 const money = c => "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const hrs = m => { const h = Math.floor(m / 60), r = m % 60; if (r && r !== 30) return `${h}h ${pad(r)}m`; const n = (h ? h : "") + (r ? "½" : ""); return m <= 60 ? n + " hr" : n + " hrs"; };
 const E = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// Invoice header; Clark edits it under Settings. Sample values until he fills his in.
+const COMPANY = { name: "Humble Gardens", address: "Sample address, Waimea, HI", phone: "808-987-0674", email: "" };
+const LOGO = '<img class="logo" src="../logo.jpg" alt="Humble Gardens logo">';
+const jobName = c => c.cat || clientOf(c.client).name;
 const monthName = m => fromIso(m + "-01").toLocaleString("en-US", { month: "long", year: "numeric" });
 
 function seed() {
@@ -119,7 +146,7 @@ function seed() {
     { id: 2, name: "Sample client B", property: "Sample property, Kailua-Kona", flat: 0, rate: 6000 },
     { id: 3, name: "Sample client C", property: "Sample property, Waikoloa", flat: 25000, rate: 5000 },
   ];
-  const cards = []; let id = 1;
+  const cards = [], logs = {}; let id = 1;
   // sample hours on past weekdays of this month only
   for (let d = MONTH + "-01"; d < TODAY && d.startsWith(MONTH); d = addDays(d, 1)) {
     const wd = fromIso(d).getDay(); if (wd === 0 || wd === 6) continue;
@@ -128,12 +155,15 @@ function seed() {
     cards.push({ id: id++, user: "Paris", client: 1 + ((n + 1) % 3), day: d, mins: 360, extra: false });
     if (wd === 1 || wd === 3) cards.push({ id: id++, user: "Steve", client: 3, day: d, mins: 180, extra: false });
     if (wd === 2) cards.push({ id: id++, user: "Steve", client: 3, day: d, mins: 120, extra: true });
+    if (wd === 5) cards.push({ id: id++, user: "Steve", client: null, cat: NONBILL[n % 4], day: d, mins: 90, extra: false });
+    logs["Shawn|" + d] = { tasks: [TASKS[n % 21], TASKS[(n + 7) % 21]], tags: [], did: "", clark: "", client: "", supplies: n % 5 ? "" : "Sample: trimmer line", repairs: "" };
   }
-  return { clients, cards, invoices: {}, expenses: [{ id: 1, day: MONTH + "-02", cents: 8450, what: "Sample: fuel" }], next: id };
+  return { clients, cards, logs, company: { ...COMPANY }, invoices: {}, expenses: [{ id: 1, day: MONTH + "-02", cents: 8450, what: "Sample: fuel" }], next: id };
 }
 const validDay = d => /^\d{4}-\d{2}-\d{2}$/.test(d || "") && iso(fromIso(d)) === d;
 let S; try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
 if (!S || !Array.isArray(S.cards) || !Array.isArray(S.clients) || !S.invoices || !Array.isArray(S.expenses)) S = seed();
+S.logs = S.logs || {}; S.company = { ...COMPANY, ...(S.company || {}) };   // devices from before 10-08
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 // You say who you are once; the device remembers and there is no switching. "Start over" (demo only) clears it with the sample data.
 let who = null; try { who = localStorage.getItem("hg_who"); } catch (e) {}
@@ -151,8 +181,8 @@ function prepare(m) {
   for (const c of S.clients) {
     const k = c.id + "|" + m, inv = S.invoices[k];
     if (inv && inv.status !== "draft") continue;   // sent/paid invoices are never rebuilt
-    const lines = invoiceLines(c, monthCards(c.id, m));
-    S.invoices[k] = { client: c.id, month: m, status: "draft", lines, issued: TODAY, no: (inv && inv.no) || Math.max(0, ...Object.values(S.invoices).map(i => i.no)) + 1 };
+    const lines = invoiceLines(c, monthCards(c.id, m)), notes = mergeNotes(inv && inv.notes, dayNotes(monthCards(c.id, m), S.logs));
+    S.invoices[k] = { client: c.id, month: m, status: "draft", lines, notes, issued: TODAY, no: (inv && inv.no) || Math.max(0, ...Object.values(S.invoices).map(i => i.no)) + 1 };
   }
   save();
 }
@@ -162,7 +192,7 @@ function top(title) {
 }
 
 function login() {
-  app.innerHTML = `<h1>Humble Gardens</h1><p class="hi">Who are you? Pick your name once. This device remembers you.</p><div class="who">
+  app.innerHTML = `${LOGO}<h1>${E(S.company.name)}</h1><p class="hi">Who are you? Pick your name once. This device remembers you.</p><div class="who">
     <button data-who="Clark">Clark <small>owner</small></button>
     ${CREW.map(n => `<button data-who="${n}">${n} <small>crew</small></button>`).join("")}</div>
     <p class="note">The real one has a password for each person, set up once by Clark.</p>`;
@@ -173,7 +203,7 @@ function crewWeek(q) {
   const dow = (fromIso(w).getDay() + 6) % 7, mon = addDays(w, -dow);
   const days = [...Array(7)].map((_, i) => addDays(mon, i));
   const got = {}, jobs = {};
-  for (const c of S.cards) if (c.user === who && c.day >= days[0] && c.day <= days[6]) { got[c.day] = (got[c.day] || 0) + c.mins; (jobs[c.day] = jobs[c.day] || []).push(clientOf(c.client).name); }
+  for (const c of S.cards) if (c.user === who && c.day >= days[0] && c.day <= days[6]) { got[c.day] = (got[c.day] || 0) + c.mins; (jobs[c.day] = jobs[c.day] || []).push(jobName(c)); }
   const tiles = days.map(d => {
     const dt = fromIso(d), lab = `<em style="font-style:normal">${dt.toLocaleString("en-US", { weekday: "short" })} <small>${dt.toLocaleString("en-US", { month: "short" })} ${dt.getDate()}</small></em>`;
     const m = got[d] || 0;
@@ -183,7 +213,7 @@ function crewWeek(q) {
   }).join("");
   const next = addDays(mon, 7);
   const sum = Object.values(got).reduce((a, b) => a + b, 0);
-  const saved = q.saved && /^[\d½]+ hrs? at .+ on [A-Z][a-z]+day$/.test(q.saved) ? `<p class="saved">Saved: ${E(q.saved)}</p>` : "";
+  const saved = q.saved && (q.saved === "notes" ? (q.saved = "your notes") : /^[\d½]+ hrs? at .+ on [A-Z][a-z]+day$/.test(q.saved)) ? `<p class="saved">Saved: ${E(q.saved)}</p>` : "";
   app.innerHTML = top("My hours") + saved + `<p class="hi">Aloha ${E(who)}. Pick a day, then the job and the hours.</p>
     <p class="wk"><a href="#week/${addDays(mon, -7)}">&larr; Last week</a>${next <= TODAY ? `<a href="#week/${next}">Next week &rarr;</a>` : ""}</p>
     <div class="days">${tiles}</div><p class="total">This week: <b>${hrs(sum)}</b></p>`;
@@ -192,33 +222,54 @@ function crewWeek(q) {
 function crewDay(d, err) {
   if (!validDay(d) || d > TODAY) return go("");
   document.body.classList.add("entry");
-  const dt = fromIso(d);
+  const dt = fromIso(d), lg = S.logs[who + "|" + d] || {}, has = (k, x) => (lg[k] || []).includes(x) ? " checked" : "";
   const have = S.cards.filter(c => c.user === who && c.day === d).map(c =>
-    `<li>${E(clientOf(c.client).name)}${c.extra ? " (extra work)" : ""}: <b>${hrs(c.mins)}</b> <button class="btn" data-del="${c.id}">Remove</button></li>`).join("");
-  const jobs = S.clients.map(c => `<label class="pick"><input type="radio" name="client" value="${c.id}"><span>${E(c.name)}</span></label>`).join("");
+    `<li>${E(jobName(c))}${c.cat ? ' <span class="nb">(not billed)</span>' : c.extra ? " (extra work)" : ""}: <b>${hrs(c.mins)}</b> <button class="btn" data-del="${c.id}">Remove</button></li>`).join("");
+  const jobs = S.clients.map(c => `<label class="pick"><input type="radio" name="job" value="c${c.id}"><span>${E(c.name)}</span></label>`).join("");
+  const other = NONBILL.map(n => `<label class="pick"><input type="radio" name="job" value="n${E(n)}"><span>${E(n)}</span></label>`).join("");
   const tiles = [...Array(20)].map((_, i) => `<label class="pick"><input type="radio" name="mins" value="${(i + 1) * 30}"><span>${hrs((i + 1) * 30)}</span></label>`).join("");
+  const ticks = [...TASKS, ...(lg.tags || [])].map(t => `<label class="pick"><input type="checkbox" name="${TASKS.includes(t) ? "task" : "tag"}" value="${E(t)}"${has("tasks", t)}${has("tags", t)}><span>${E(t)}</span></label>`).join("");
+  const box = (n, l) => `<label for="n_${n}">${l}</label><textarea id="n_${n}" name="${n}" rows="2">${E(lg[n] || "")}</textarea>`;
   app.innerHTML = top("My hours") + `<p><a href="#week/${d}">&larr; Back to the week</a></p>
     <h2 style="font-size:28px">${dt.toLocaleString("en-US", { weekday: "long" })}, ${dt.toLocaleString("en-US", { month: "long" })} ${dt.getDate()}</h2>
     ${err ? `<p style="color:#a33;font-size:20px">${E(err)}</p>` : ""}
     ${have ? `<h2>Already in</h2><ul class="have">${have}</ul>` : ""}
     <form id="hours"><h2>1. Which job?</h2><div class="grid">${jobs}</div>
+    <h2>Not a client <span class="nb" style="font-size:16px">(counts as your hours, never billed)</span></h2><div class="grid">${other}</div>
     <h2>2. How many hours?</h2><div class="grid hrs">${tiles}</div>
-    <label class="pick wide"><input type="checkbox" name="extra"><span>This was extra work, on top of the usual visit</span></label>
-    <div class="stick"><p id="msg" class="err"></p><button class="big" id="savebtn">Save</button></div></form>`;
+    <label class="pick wide" id="extrabox"><input type="checkbox" name="extra"><span>This was extra work, on top of the usual visit</span></label>
+    <div class="stick"><p id="msg" class="err"></p><button class="big" id="savebtn">Save</button></div></form>
+    <form id="notes" class="notes"><h2>3. Notes for the day</h2>
+    <h2 style="font-size:19px">What did you do today?</h2><div class="ticks">${ticks}</div>
+    <label for="n_newtag">Add a tag</label><input type="text" id="n_newtag" name="newtag" placeholder="e.g. gutter cleaning">
+    ${box("did", "What did you do today? (your words)")}${box("clark", "Things Clark needs to know")}${box("client", "Things the client needs to know")}
+    ${box("supplies", "What supplies do we need?")}${box("repairs", "Any equipment repairs/replacements?")}
+    <p class="note">Ticked items, "what did you do" and "client needs to know" go onto that client's draft invoice for the day. Clark checks them before sending.</p>
+    <button class="big" id="notesbtn">Save notes</button></form>`;
   const form = document.getElementById("hours"), btn = document.getElementById("savebtn"), msg = document.getElementById("msg");
-  form.oninput = () => { const f = new FormData(form), c = f.get("client"), m = f.get("mins"); msg.textContent = "";
-    btn.innerHTML = c && m ? `Save ${hrs(Number(m))}<small>${E(clientOf(Number(c)).name)}</small>` : c ? "Now pick the hours" : m ? "Now pick the job" : "Save"; };
+  const pickName = v => v[0] === "c" ? clientOf(Number(v.slice(1))).name : v.slice(1);
+  form.oninput = () => { const f = new FormData(form), c = f.get("job"), m = f.get("mins"); msg.textContent = "";
+    document.getElementById("extrabox").hidden = !!c && c[0] === "n";
+    btn.innerHTML = c && m ? `Save ${hrs(Number(m))}<small>${E(pickName(c))}</small>` : c ? "Now pick the hours" : m ? "Now pick the job" : "Save"; };
   form.onsubmit = e => {
-    e.preventDefault(); const f = new FormData(form), mins = Number(f.get("mins")), cid = Number(f.get("client"));
-    if (!cid) { msg.textContent = "Pick a job first."; return; } if (!mins) { msg.textContent = "Pick the hours."; return; }
+    e.preventDefault(); const f = new FormData(form), mins = Number(f.get("mins")), job = f.get("job") || "";
+    if (!job) { msg.textContent = "Pick a job first."; return; } if (!mins) { msg.textContent = "Pick the hours."; return; }
     const bad = canAddHours(S.cards, who, d, mins, TODAY); if (bad) { msg.textContent = bad; return; }
-    S.cards.push({ id: S.next++, user: who, client: cid, day: d, mins, extra: f.get("extra") === "on" }); save();
-    location.hash = `week/${d}?saved=${encodeURIComponent(hrs(mins) + " at " + clientOf(cid).name + " on " + fromIso(d).toLocaleString("en-US", { weekday: "long" }))}`;
+    const nb = job[0] === "n" && NONBILL.includes(job.slice(1));
+    S.cards.push({ id: S.next++, user: who, client: nb ? null : Number(job.slice(1)), cat: nb ? job.slice(1) : undefined, day: d, mins, extra: !nb && f.get("extra") === "on" }); save();
+    location.hash = `week/${d}?saved=${encodeURIComponent(hrs(mins) + " at " + pickName(job) + " on " + fromIso(d).toLocaleString("en-US", { weekday: "long" }))}`;
+  };
+  document.getElementById("notes").onsubmit = e => {
+    e.preventDefault(); const f = new FormData(e.target), t = (f.get("newtag") || "").trim().toLowerCase().slice(0, 40);
+    const tags = f.getAll("tag"); if (t && !TASKS.includes(t) && !tags.includes(t)) tags.push(t);
+    const tasks = f.getAll("task"); if (t && TASKS.includes(t) && !tasks.includes(t)) tasks.push(t);
+    S.logs[who + "|" + d] = { tasks, tags, ...Object.fromEntries(["did", "clark", "client", "supplies", "repairs"].map(k => [k, (f.get(k) || "").trim()])) }; save();
+    location.hash = `week/${d}?saved=notes`;
   };
 }
 
 function ownerTabs(on, m) {
-  const t = [["Dashboard", ""], ["Invoices", "invoices"], ["Hours", "hours"], ["Clients", "clients"], ["Expenses", "expenses"]];
+  const t = [["Dashboard", ""], ["Invoices", "invoices"], ["Hours", "hours"], ["Clients", "clients"], ["Expenses", "expenses"], ["Crew notes", "notes"], ["Settings", "settings"]];
   return `<div class="tabs">${t.map(([l, h]) => `<a href="#${h}${h ? "/" : ""}${h ? m : "m/" + m}" class="${on === l ? "on" : ""}">${l}</a>`).join("")}</div>`;
 }
 function monthNav(base, m) {
@@ -231,15 +282,16 @@ function invsFor(m) { return Object.values(S.invoices).filter(i => i.month === m
 function ownerDash(m) {
   const inv = invsFor(m), sum = s => inv.filter(i => !s || i.status === s).reduce((a, i) => a + total(i.lines), 0);
   const exp = S.expenses.filter(x => x.day.startsWith(m)).reduce((a, x) => a + x.cents, 0);
-  const mins = S.cards.filter(c => c.day.startsWith(m)).reduce((a, c) => a + c.mins, 0);
+  const mc = S.cards.filter(c => c.day.startsWith(m)), mins = mc.reduce((a, c) => a + c.mins, 0), nb = nonBillMins(mc);
+  const nbRows = NONBILL.map(n => [n, mc.filter(c => c.cat === n).reduce((a, c) => a + c.mins, 0)]).filter(x => x[1]);
   const per = S.clients.map(c => { const cs = monthCards(c.id, m), i = invoice(c.id, m);
     return `<tr><td>${E(c.name)}</td><td class="n">${(t => t ? hrs(t) : "0")(cs.reduce((a, x) => a + x.mins, 0))}</td><td class="n">${(ex => ex ? hrs(ex) : "—")(cs.filter(x => x.extra).reduce((a, x) => a + x.mins, 0))}</td><td class="n">${i ? money(total(i.lines)) + ` <span class="status ${i.status}">${i.status}</span>` : "—"}</td></tr>`; }).join("");
   app.innerHTML = top("Office") + ownerTabs("Dashboard", m) + monthNav("m/", m) + `
     <div class="tiles"><div class="tile"><span>Invoiced</span><b>${money(sum())}</b></div><div class="tile"><span>Paid</span><b>${money(sum("paid"))}</b></div>
     <div class="tile"><span>Owed (sent, unpaid)</span><b>${money(sum("sent"))}</b></div><div class="tile"><span>Expenses (sample)</span><b>${money(exp)}</b></div>
-    <div class="tile"><span>Crew hours (sample)</span><b>${mins ? hrs(mins) : "0"}</b></div></div>
+    <div class="tile"><span>Crew hours (sample)</span><b>${mins ? hrs(mins) : "0"}</b></div><div class="tile" id="nbtile"><span>Non-billable labour (in crew hours)</span><b>${nb ? hrs(nb) : "0"}</b></div></div>
     ${inv.length ? `<p class="note">${inv.filter(i => i.status === "draft").length} draft${inv.filter(i => i.status === "draft").length === 1 ? "" : "s"} (${money(sum("draft"))}) not sent yet. Invoiced counts drafts too.</p>` : `<p class="note">No invoices for ${monthName(m)} yet.</p><a class="big" href="#invoices/${m}">Prepare invoices for ${monthName(m)}</a>`}
-    <h2>By client</h2><div class="scroll"><table><tr><th>Client</th><th class="n">Hours</th><th class="n">Extra</th><th class="n">Invoice</th></tr>${per}</table></div>`;
+    <h2>By client</h2><div class="scroll"><table><tr><th>Client</th><th class="n">Hours</th><th class="n">Extra</th><th class="n">Invoice</th></tr>${per}<tr class="nb" id="nbline"><td>Non-billable labour (not invoiced)${nbRows.length ? `<br><span class="note">${nbRows.map(([n, x]) => `${E(n)} ${hrs(x)}`).join(" · ")}</span>` : ""}</td><td class="n">${nb ? hrs(nb) : "0"}</td><td class="n">—</td><td class="n">not billed</td></tr></table></div>`;
 }
 
 function ownerInvoices(m) {
@@ -261,23 +313,23 @@ function ownerInvoice(cid, m) {
     ${i.status === "draft" ? `<button class="btn" data-sent="${cid}|${m}">Mark as sent</button>` : ""}
     ${i.status !== "paid" ? ["cash", "check", "bank"].map(x => `<button class="btn" data-pay="${cid}|${m}|${x}">Paid by ${x}</button>`).join("") : ""}</div>`;
   app.innerHTML = top("Office") + ownerTabs("Invoices", m) + `<p class="noprint"><a href="#invoices/${m}">&larr; All invoices</a></p>` + acts + `
-    <div class="inv"><div class="sample">SAMPLE</div><h3>Humble Gardens</h3><div class="sub">Big Island, Hawaii · 808-987-0674</div>
+    <div class="inv"><div class="sample">SAMPLE</div><div class="invhead">${LOGO}<div><h3>${E(S.company.name)}</h3><div class="sub" id="cohead">${[S.company.address, S.company.phone, S.company.email].filter(Boolean).map(E).join("<br>")}</div></div></div>
     <h2 style="margin-top:20px">Invoice ${m}-${String(i.no).padStart(4, "0")}</h2><p>Billed to: <b>${E(c.name)}</b><br>${E(c.property)}</p>
     <p class="sub">Date: ${fromIso(i.issued || TODAY).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} · Due: ${fromIso(addDays(i.issued || TODAY, 14)).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
     <table><tr><th>Description</th>${hasHrs ? '<th class="n">Hours</th>' : ""}<th class="n">Amount</th></tr>${lines}
     <tr><td><b>Total</b></td>${hasHrs ? "<td></td>" : ""}<td class="n"><b>${money(total(i.lines))}</b></td></tr></table>
-    ${incl ? `<p class="sub">${incl}.</p>` : ""}<p>Pay by cash, check, or bank transfer. Mahalo!</p>
+    ${incl ? `<p class="sub">${incl}.</p>` : ""}${(i.notes || []).length ? `<h3 style="font-size:19px;margin-top:18px">Work done</h3><table class="work">${i.notes.map((n, x) => `<tr><td style="white-space:nowrap">${fromIso(n.day).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</td><td>${i.status === "draft" ? `<textarea rows="2" id="note${x}" aria-label="Note for ${n.day}">${E(n.text)}</textarea><button class="btn noprint" data-note="${cid}|${m}|${x}">Save note</button><span class="print-only">${E(n.text)}</span>` : E(n.text)}</td></tr>`).join("")}</table>` : ""}<p>Pay by cash, check, or bank transfer. Mahalo!</p>
     ${i.status === "paid" ? `<p>Paid by ${E(i.paid_method)} on ${E(i.paid_on)}. Mahalo.</p>` : ""}</div>
     <p class="note noprint">You send it yourself: in the real one this invoice becomes a PDF attached to an email.</p>`;
 }
 
 function ownerHours(m) {
   const people = CREW.map(p => { const cs = S.cards.filter(c => c.user === p && c.day.startsWith(m));
-    return `<tr><td>${p}</td><td class="n">${hrs(cs.reduce((a, c) => a + c.mins, 0)) || "0"}</td><td class="n">${cs.length}</td></tr>`; }).join("");
+    return `<tr><td>${p}</td><td class="n">${hrs(cs.reduce((a, c) => a + c.mins, 0)) || "0"}</td><td class="n">${(x => x ? hrs(x) : "—")(nonBillMins(cs))}</td><td class="n">${cs.length}</td></tr>`; }).join("");
   const recent = S.cards.filter(c => c.day.startsWith(m)).sort((a, b) => b.day.localeCompare(a.day) || b.id - a.id).slice(0, 30).map(c =>
-    `<tr><td>${c.day.slice(5)}</td><td>${c.user}</td><td>${E(clientOf(c.client).name)}${c.extra ? " (extra)" : ""}</td><td class="n">${hrs(c.mins)}</td></tr>`).join("");
+    `<tr><td>${c.day.slice(5)}</td><td>${c.user}</td><td>${E(jobName(c))}${c.cat ? ' <span class="nb">(not billed)</span>' : c.extra ? " (extra)" : ""}</td><td class="n">${hrs(c.mins)}</td></tr>`).join("");
   app.innerHTML = top("Office") + ownerTabs("Hours", m) + monthNav("hours/", m) + `
-    <h2>By person</h2><table><tr><th>Crew</th><th class="n">Hours</th><th class="n">Entries</th></tr>${people}</table>
+    <h2>By person</h2><table><tr><th>Crew</th><th class="n">Hours</th><th class="n">Not billed</th><th class="n">Entries</th></tr>${people}</table>
     <h2>Latest entries</h2><div class="scroll"><table><tr><th>Day</th><th>Who</th><th>Job</th><th class="n">Hours</th></tr>${recent || `<tr><td colspan="4">No hours entered for ${monthName(m)}.</td></tr>`}</table></div>`;
 }
 
@@ -304,6 +356,23 @@ function ownerExpenses(m) {
     S.expenses.push({ id: Math.max(0, ...S.expenses.map(x => x.id)) + 1, day: f.get("day"), what: f.get("what"), cents: Math.round(Number(f.get("amt")) * 100) }); save(); safe(); };
 }
 
+function ownerNotes(m) {
+  const rows = Object.entries(S.logs).filter(([k, l]) => k.split("|")[1].startsWith(m) && (l.clark || l.supplies || l.repairs))
+    .sort((a, b) => b[0].split("|")[1].localeCompare(a[0].split("|")[1])).map(([k, l]) => { const [u, d] = k.split("|");
+      return `<tr><td>${d.slice(5)}</td><td>${E(u)}</td><td>${E(l.clark || "")}</td><td>${E(l.supplies || "")}</td><td>${E(l.repairs || "")}</td></tr>`; }).join("");
+  app.innerHTML = top("Office") + ownerTabs("Crew notes", m) + monthNav("notes/", m) + `<p class="note">What the crew wrote for you: things you need to know, supplies needed, equipment repairs.</p>
+    <div class="scroll"><table id="crewnotes"><tr><th>Day</th><th>Who</th><th>For Clark</th><th>Supplies needed</th><th>Repairs/replacements</th></tr>${rows || `<tr><td colspan="5">No crew notes for ${monthName(m)}.</td></tr>`}</table></div>`;
+}
+
+function ownerSettings(m) {
+  const c = S.company, f = (k, l) => `<label>${l}<input name="${k}" value="${E(c[k] || "")}"></label>`;
+  app.innerHTML = top("Office") + ownerTabs("Settings", m) + `<h2>Invoice header</h2><p class="note">Shown at the top of every invoice, next to your logo.</p>
+    <form class="row" id="co">${f("name", "Company name")}${f("address", "Address")}${f("phone", "Phone")}${f("email", "Email")}<button class="btn fill">Save</button></form>
+    <p class="note">In the real one you can also upload a new logo here.</p>`;
+  document.getElementById("co").onsubmit = e => { e.preventDefault(); const f = new FormData(e.target);
+    S.company = Object.fromEntries(["name", "address", "phone", "email"].map(k => [k, (f.get(k) || "").trim()])); if (!S.company.name) S.company.name = COMPANY.name; save(); safe(); };
+}
+
 function render() {
   document.body.classList.remove("entry"); scrollTo(0, 0);
   if (!who) return login();
@@ -315,14 +384,17 @@ function render() {
   if (r === "hours") return ownerHours(m);
   if (r === "clients") return ownerClients(m);
   if (r === "expenses") return ownerExpenses(m);
+  if (r === "notes") return ownerNotes(m);
+  if (r === "settings") return ownerSettings(m);
   return ownerDash(m);
 }
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-who],[data-del],[data-prep],[data-sent],[data-pay]"); if (!t) return;
+  const t = e.target.closest("[data-who],[data-del],[data-prep],[data-sent],[data-pay],[data-note]"); if (!t) return;
   e.preventDefault(); const d = t.dataset;
   if (d.who) { setWho(d.who); location.hash = ""; }
   else if (d.del) { if (!confirm("Remove this entry?")) return; S.cards = S.cards.filter(c => !(c.id === Number(d.del) && c.user === who)); save(); }
   else if (d.prep) prepare(d.prep);
+  else if (d.note) { const [c, m, x] = d.note.split("|"), i = S.invoices[c + "|" + m]; if (i.status === "draft") { i.notes[x] = { day: i.notes[x].day, text: document.getElementById("note" + x).value.trim(), edited: true }; save(); } }
   else if (d.sent) { const i = S.invoices[d.sent]; if (i.status === "draft") i.status = "sent"; save(); }
   else if (d.pay) { const [c, m, x] = d.pay.split("|"), i = S.invoices[c + "|" + m]; i.status = "paid"; i.paid_method = x; i.paid_on = TODAY; save(); }
   safe();
