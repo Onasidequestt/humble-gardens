@@ -1,0 +1,2 @@
+/* One rule for every Humble Gardens logo: width-driven, height follows the image (484x700), never squeezed by flex/grid. Pages set --logo-w only. */
+img.logo{display:block;width:var(--logo-w,150px);min-width:min(110px,100%);max-width:100%;height:auto;aspect-ratio:484/700;object-fit:contain;flex:none}
