@@ -38,7 +38,7 @@ form{display:grid;gap:14px;max-width:560px;margin-top:20px}
 label{font-weight:500;font-size:15px}
 input,textarea,select{width:100%;font:inherit;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--card);margin-top:4px}
 .note{font-size:14px;color:var(--muted)}
-.contact{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+.contact{display:grid;grid-template-columns:1fr;gap:40px}
 .phone{font-family:Fraunces,serif;font-size:30px;text-decoration:none;color:var(--ink)}
 footer{padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 @media (max-width:760px){
@@ -83,7 +83,7 @@ footer{padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-s
 <section>
   <h2>How it works</h2>
   <div class="steps">
-    <div><b>1</b>Call or send the form and tell us about your property.</div>
+    <div><b>1</b>Call us and tell us about your property.</div>
     <div><b>2</b>We get back to you to talk through what your property needs.</div>
     <div><b>3</b>Regular clients get one invoice each month.</div>
   </div>
@@ -97,16 +97,6 @@ footer{padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-s
       <a class="phone" href="tel:+18089870674">808-987-0674</a>
       <p class="note">Landscaping care for North Kona, Waimea, South Kohala, and Western/Leeward Side of Big Island.</p>
     </div>
-    <form onsubmit="event.preventDefault();this.querySelector('.note').textContent='Draft only: in the finished site this sends your message to Humble Gardens.'">
-      <label>Name<input required autocomplete="name"></label>
-      <label>Phone<input type="tel" required autocomplete="tel"></label>
-      <label>Email (optional)<input type="email" autocomplete="email"></label>
-      <label>Property area<input placeholder="e.g. Waimea town"></label>
-      <label>What do you need?<select><option>Monthly service</option><option>Irrigation assessment and repair</option><option>New plantings</option><option>Landscape design consulting</option><option>Plant pest and disease assessment</option><option>Hauling</option><option>Something else</option></select></label>
-      <label>Message<textarea rows="4"></textarea></label>
-      <button class="btn" type="submit" style="border:0;cursor:pointer;justify-self:start">Send</button>
-      <p class="note">We will get back to you by phone or email.</p>
-    </form>
   </div>
 </section>
 
