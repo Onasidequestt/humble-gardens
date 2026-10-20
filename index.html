@@ -39,6 +39,7 @@ label{font-weight:500;font-size:15px}
 input,textarea,select{width:100%;font:inherit;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--card);margin-top:4px}
 .note{font-size:14px;color:var(--muted)}
 .contact{display:grid;grid-template-columns:.8fr 1.2fr;gap:40px}
+.photo{margin:0 0 8px}.photo img{display:block;width:100%;height:auto;aspect-ratio:16/7;object-fit:cover;object-position:50% 60%;border-radius:10px}
 .area{font-size:15px;color:var(--muted);margin:-10px 0 24px}
 .bio{max-width:760px}.bio p{margin:0 0 16px}
 .steps{grid-template-columns:repeat(4,1fr)}
@@ -51,6 +52,7 @@ footer{padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-s
 @media (max-width:760px){
   .hero,.contact{grid-template-columns:1fr}
   .hero .logo{--logo-w:280px;order:-1}
+  .photo img{aspect-ratio:4/3}
   .grid,.steps{grid-template-columns:1fr}
   h1{font-size:34px}
   nav a{margin-left:8px}
@@ -74,6 +76,8 @@ footer{padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-s
   </div>
   <img class="logo" src="logo.jpg" alt="Humble Gardens logo: a circle of native Hawaiian plants and birds">
 </div>
+
+<figure class="photo"><img src="grounds.jpg" width="1600" height="1067" alt="Palms, shade trees and kept lawn above the ocean on the Kohala coast" loading="lazy"></figure>
 
 <section id="about">
   <h2>About us</h2>
@@ -128,7 +132,7 @@ footer{padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-s
   </div>
 </section>
 
-<footer><span>© Humble Gardens · Waimea, Big Island, Hawaiʻi</span><a href="https://office.humble-gardens.com/">Staff login</a></footer>
+<footer><span>© Humble Gardens · Waimea, Big Island, Hawaiʻi</span><span>Photo: <a href="https://commons.wikimedia.org/wiki/File:H%C4%81puna_Beach_State_Park_Big_island,_Hawaii_(46276933231).jpg" rel="noopener">dronepicr</a>, <a href="https://creativecommons.org/licenses/by/2.0/" rel="noopener">CC BY 2.0</a></span><a href="https://office.humble-gardens.com/">Staff login</a></footer>
 <script>
 // The contact form posts to the office Worker, which sends it to Clark and bounces back here with ?sent=.
 (() => { const r = new URLSearchParams(location.search).get("sent"); if (!r) return;
