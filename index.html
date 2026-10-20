@@ -32,13 +32,20 @@ section{padding:56px 0;border-top:1px solid var(--line)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px}
 .card h3{margin:0 0 8px;font-size:21px}
 .card ul{margin:0;padding-left:18px;color:var(--muted)}
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px}
+.steps{display:grid;gap:18px;margin-top:22px}
 .steps b{display:block;font-family:Fraunces,serif;font-size:28px;color:var(--leaf)}
 form{display:grid;gap:14px;max-width:560px;margin-top:20px}
 label{font-weight:500;font-size:15px}
 input,textarea,select{width:100%;font:inherit;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--card);margin-top:4px}
 .note{font-size:14px;color:var(--muted)}
-.contact{display:grid;grid-template-columns:1fr;gap:40px}
+.contact{display:grid;grid-template-columns:.8fr 1.2fr;gap:40px}
+.area{font-size:15px;color:var(--muted);margin:-10px 0 24px}
+.bio{max-width:760px}.bio p{margin:0 0 16px}
+.steps{grid-template-columns:repeat(4,1fr)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.sent{background:var(--leaf-soft);border-left:4px solid var(--leaf);padding:14px 16px;border-radius:6px;font-weight:500}
+.sent.bad{background:#f6e3df;border-color:#a33}
+button.btn{border:0;font:inherit;font-weight:600;cursor:pointer}
 .phone{font-family:Fraunces,serif;font-size:30px;text-decoration:none;color:var(--ink)}
 footer{padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 @media (max-width:760px){
@@ -62,10 +69,19 @@ footer{padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-s
   <div>
     <h1>Landscaping care for North Kona, Waimea, South Kohala, and Western/Leeward Side of Big Island.</h1>
     <p class="lead">Regular yard maintenance, irrigation work, new plantings, landscape design consulting, plant pest and disease assessments, and hauling.</p>
-    <a class="btn" href="tel:+18089870674">Call us</a>
+    <p class="area">Currently servicing accounts in Waikoloa Beach, Mauna Lani, Kohala Ranch, Kohala by the Sea, Kohala Estates, Kohala Waterfront, 49 Black Sands, Pauoa Beach, Ke Kailani, Champion Ridge, Nohea, The Cape, Ka Milo, Waimea, Waikii Ranch, and other Northwestern/Leeward Side of Big Island areas.</p>
+    <a class="btn" href="tel:+18089870674">Call us</a><a class="btn ghost" href="#contact">Send us a message</a>
   </div>
   <img class="logo" src="logo.jpg" alt="Humble Gardens logo: a circle of native Hawaiian plants and birds">
 </div>
+
+<section id="about">
+  <h2>About us</h2>
+  <div class="bio">
+    <p>At Humble Gardens, we believe exceptional landscapes require exceptional care. We are a high-end, full-service landscaping maintenance company built on a foundation of long-term client relationships and highly acclaimed references. Our long-term, deeply trained professional staff specializes in the fine details of estate care—offering irrigation testing and repairs, fertilization, pest control management, precise weeding, and full green waste hauling.</p>
+    <p>Whether you require daily, weekly, or monthly attention, we tailor our services to your schedule through flexible hourly billing or predictable monthly service contracts. Because we focus strictly on premium maintenance—stepping aside from brand-new installation projects or large-scale arborist work—our team remains entirely dedicated to preserving and perfecting the beauty of your existing landscape.</p>
+  </div>
+</section>
 
 <section id="services">
   <h2>What we do</h2>
@@ -82,10 +98,12 @@ footer{padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-s
 
 <section>
   <h2>How it works</h2>
+  <p class="lead"><strong>Direct Homeowner Focus:</strong> We work exclusively and directly with individual homeowners—not through HOAs or property management companies.</p>
   <div class="steps">
-    <div><b>1</b>Call us and tell us about your property.</div>
-    <div><b>2</b>We get back to you to talk through what your property needs.</div>
-    <div><b>3</b>Regular clients get one invoice each month.</div>
+    <div><b>1</b><strong>Share Your Details:</strong> Call us to tell us all about your property.</div>
+    <div><b>2</b><strong>On-Site Visit &amp; Custom Plan:</strong> We will visit your property, evaluate its needs, and present a tailored plan along with a monthly service agreement.</div>
+    <div><b>3</b><strong>Seamless Execution:</strong> Once the agreement is signed, we get straight to work executing your custom plan.</div>
+    <div><b>4</b><strong>Hassle-Free Billing:</strong> Regular clients receive just one consolidated invoice each month.</div>
   </div>
 </section>
 
@@ -93,14 +111,31 @@ footer{padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-s
   <div class="contact">
     <div>
       <h2>Get in touch</h2>
-      <p class="lead">The quickest way to reach us is by phone.</p>
+      <p class="lead">Call us, or send a message and we'll get back to you.</p>
       <a class="phone" href="tel:+18089870674">808-987-0674</a>
-      <p class="note">Landscaping care for North Kona, Waimea, South Kohala, and Western/Leeward Side of Big Island.</p>
+    </div>
+    <div>
+      <p id="sent" class="sent" role="status" hidden></p>
+      <form id="msgform" method="post" action="https://office.humble-gardens.com/api/contact">
+        <label>Your name<input name="name" required maxlength="100" autocomplete="name"></label>
+        <label>Email<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
+        <label>Phone (optional)<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
+        <label>Tell us about your property<textarea name="message" rows="5" required maxlength="5000"></textarea></label>
+        <label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+        <button class="btn" type="submit">Send message</button>
+      </form>
     </div>
   </div>
 </section>
 
 <footer><span>© Humble Gardens · Waimea, Big Island, Hawaiʻi</span><a href="https://office.humble-gardens.com/">Staff login</a></footer>
+<script>
+// The contact form posts to the office Worker, which sends it to Clark and bounces back here with ?sent=.
+(() => { const r = new URLSearchParams(location.search).get("sent"); if (!r) return;
+  const p = document.getElementById("sent"), t = { "1": "Thanks — your message is on its way. We'll get back to you soon.", "busy": "We've had a few messages from you already. Please call us instead: 808-987-0674.", "0": "Sorry, that didn't send. Please check your email address, or call us: 808-987-0674." };
+  p.textContent = t[r] || t["0"]; p.classList.toggle("bad", r !== "1"); p.hidden = false; if (r === "1") document.getElementById("msgform").hidden = true;
+  history.replaceState(null, "", location.pathname + "#contact"); })();
+</script>
 </div>
 </body>
 </html>
